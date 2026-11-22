@@ -43,6 +43,7 @@ export function initDatabase(): void {
       id INTEGER PRIMARY KEY CHECK (id = 1),
       admin_username TEXT NOT NULL DEFAULT 'Robiul',
       admin_password_hash TEXT DEFAULT '',
+      admin_email_hash TEXT NOT NULL DEFAULT '',
       setup_completed INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -391,15 +392,23 @@ export function initDatabase(): void {
   if (!cols.some((c) => c.name === 'admin_username')) {
     db.exec(`ALTER TABLE admin_config ADD COLUMN admin_username TEXT NOT NULL DEFAULT 'Robiul'`);
   }
+  if (!cols.some((c) => c.name === 'admin_email_hash')) {
+    db.exec(`ALTER TABLE admin_config ADD COLUMN admin_email_hash TEXT NOT NULL DEFAULT ''`);
+  }
 
   const DEFAULT_ADMIN_HASH =
     'abdd686bd9bd81ff005ee6e648e84a40:c8706d9e1beeb99da442a608c2e42782cf933e1cad107840511367b8de50749921cdb92bfe9b958a119eef0ddae94eee907cf69d823663950ead673d4bb6fba9';
+  const DEFAULT_ADMIN_EMAIL_HASH =
+    'e9b582cd55ac636cb54e352284f29c08:36a25bf1412ecbd409047179299bffb5abb2a85fe6bb1cb043b282ea0042bcd0756de3bb00bdf8fd3b44662ba00f3b6b5d499a610f418dfc0574274a0848dd5b';
   db.prepare(
-    `INSERT OR IGNORE INTO admin_config (id, admin_username, admin_password_hash, setup_completed) VALUES (1, 'Robiul', ?, 1)`
-  ).run(DEFAULT_ADMIN_HASH);
+    `INSERT OR IGNORE INTO admin_config (id, admin_username, admin_password_hash, admin_email_hash, setup_completed) VALUES (1, 'Robiul', ?, ?, 1)`
+  ).run(DEFAULT_ADMIN_HASH, DEFAULT_ADMIN_EMAIL_HASH);
   db.prepare(
-    `UPDATE admin_config SET admin_username = 'Robiul', admin_password_hash = ?, setup_completed = 1 WHERE id = 1 AND setup_completed = 0`
-  ).run(DEFAULT_ADMIN_HASH);
+    `UPDATE admin_config SET admin_username = 'Robiul', admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1 WHERE id = 1 AND setup_completed = 0`
+  ).run(DEFAULT_ADMIN_HASH, DEFAULT_ADMIN_EMAIL_HASH);
+  db.prepare(
+    `UPDATE admin_config SET admin_email_hash = ? WHERE id = 1 AND (admin_email_hash IS NULL OR admin_email_hash = '')`
+  ).run(DEFAULT_ADMIN_EMAIL_HASH);
 
   seedInitialData();
 }
@@ -495,15 +504,16 @@ export function recalculateProductRating(productId: number): void {
 
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
   brand_name: 'SHOPNEXA',
-  tagline: 'THE FUTURE OF SHOPPING',
+  tagline: 'THE FUTURE OF SHOPPING 🛍️',
+  logo_slogan: 'SHOP • DISCOVER • ENJOY',
   logo_url: '',
   hero_title: 'Curated Luxury, Direct & Global Discovery',
   hero_subtitle:
     'A global shopping destination uniting direct-from-vault SHOPNEXA editions with verified international partner collections.',
   hero_cta_text: 'Explore Collection',
   hero_image: '/src/assets/images/hero_shopnexa_luxury_1795308770793.jpg',
-  promo_banner_text: 'Worldwide Express Delivery · Direct bKash, Nagad & COD in Bangladesh',
-  promo_banner_enabled: true,
+  promo_banner_text: '',
+  promo_banner_enabled: false,
   contact_email: 'support@shopnexa.global',
   business_address: 'Rangpur, Bangladesh · Global Fulfillment',
   facebook_url: 'https://www.facebook.com/share/1WFDAntMgp/',
@@ -522,7 +532,7 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
     order_status: true,
     support: true,
   },
-  seo_title: 'SHOPNEXA — The Future of Shopping | Global Hybrid Marketplace',
+  seo_title: 'SHOPNEXA – THE FUTURE OF SHOPPING',
   seo_description:
     'Shop direct luxury goods and verified international affiliate discoveries on SHOPNEXA.',
   seo_keywords: 'SHOPNEXA, luxury e-commerce, Bangladesh online shopping, bKash, Nagad, global marketplace',
@@ -541,6 +551,7 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
   affiliate_disclosure:
     'Affiliate Disclosure: Items marked Affiliate Partner redirect via tracked links to AliExpress. SHOPNEXA may earn a commission at no additional cost to you. AliExpress handles payment, fulfillment, and buyer protection for affiliate purchases.',
   email_notifications_enabled: true,
+  customer_download_buyers_only: true,
 };
 
 export function getSiteSettings(): SiteSettings {
@@ -764,8 +775,25 @@ function seedInitialData(): void {
   } else {
     try {
       const parsed = JSON.parse(existingSettings.value_json);
+      const patch: Partial<SiteSettings> = {};
       if (parsed.business_address === 'Gulshan Avenue, Dhaka 1212, Bangladesh · Global Fulfillment') {
-        saveSiteSettings({ business_address: 'Rangpur, Bangladesh · Global Fulfillment' });
+        patch.business_address = 'Rangpur, Bangladesh · Global Fulfillment';
+      }
+      if (!parsed.tagline || parsed.tagline === 'THE FUTURE OF SHOPPING') {
+        patch.tagline = 'THE FUTURE OF SHOPPING 🛍️';
+      }
+      if (!parsed.logo_slogan) {
+        patch.logo_slogan = 'SHOP • DISCOVER • ENJOY';
+      }
+      if (!parsed.seo_title || parsed.seo_title === 'SHOPNEXA — The Future of Shopping | Global Hybrid Marketplace') {
+        patch.seo_title = 'SHOPNEXA – THE FUTURE OF SHOPPING';
+      }
+      if (parsed.promo_banner_text === 'Worldwide Express Delivery · Direct bKash, Nagad & COD in Bangladesh') {
+        patch.promo_banner_text = '';
+        patch.promo_banner_enabled = false;
+      }
+      if (Object.keys(patch).length > 0) {
+        saveSiteSettings(patch);
       }
     } catch {
       // ignore

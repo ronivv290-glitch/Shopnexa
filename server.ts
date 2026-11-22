@@ -5,6 +5,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import multer from 'multer';
 import rateLimit from 'express-rate-limit';
+import { ZipArchive, type ArchiverError } from 'archiver';
 import { createServer as createViteServer } from 'vite';
 import {
   db,
@@ -25,6 +26,7 @@ import {
   hashPassword,
   verifyPassword,
   signToken,
+  verifyToken,
   isValidSafeUrl,
   sanitizeString,
   type AuthenticatedRequest,
@@ -173,12 +175,12 @@ app.get('/api/store/bootstrap', (_req, res) => {
   const settings = getSiteSettings();
   const categories = db
     .prepare(
-      `SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status != 'draft') AS product_count
+      `SELECT c.*, (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id AND p.status != 'draft' AND p.product_type = 'own') AS product_count
        FROM categories c
        ORDER BY c.sort_order ASC, c.id ASC`
     )
     .all();
-  const products = getAllProducts().filter((p) => p.status !== 'draft');
+  const products = getAllProducts().filter((p) => p.status !== 'draft' && p.product_type === 'own');
   const paymentSettings = (db.prepare(`SELECT * FROM payment_settings ORDER BY id ASC`).all() as any[]).map((p) => ({
     ...p,
     is_enabled: p.is_enabled === 1,
@@ -394,16 +396,17 @@ app.post('/api/auth/change-password', requireAuth, (req: AuthenticatedRequest, r
   res.json({ message: 'Password updated successfully.' });
 });
 
-// ---------- ADMIN AUTHENTICATION (username + password with env override) ----------
+// ---------- ADMIN AUTHENTICATION (username + password + hidden Gmail verification) ----------
 app.get('/api/admin/auth/status', (_req, res) => {
   const envPass = process.env.ADMIN_PASSCODE?.trim();
-  const row = db.prepare(`SELECT admin_username, setup_completed FROM admin_config WHERE id = 1`).get() as
-    | { admin_username: string; setup_completed: number }
+  const row = db.prepare(`SELECT setup_completed FROM admin_config WHERE id = 1`).get() as
+    | { setup_completed: number }
     | undefined;
   res.json({
     envConfigured: Boolean(envPass),
     needsInitialSetup: !envPass && (!row || row.setup_completed !== 1),
     requiresUsername: true,
+    requiresGmailVerification: true,
   });
 });
 
@@ -416,19 +419,19 @@ app.post('/api/admin/auth/setup', authLimiter, (req, res) => {
     | { setup_completed: number }
     | undefined;
   if (row && row.setup_completed === 1) {
-    res.status(409).json({ error: 'Admin password has already been claimed.' });
+    res.status(409).json({ error: 'Admin access has already been claimed.' });
     return;
   }
   const username = sanitizeString(req.body.username || 'Robiul', 60);
   const passcode = typeof req.body.passcode === 'string' ? req.body.passcode : '';
-  if (passcode.length < 6) {
-    res.status(400).json({ error: 'Admin password must be at least 6 characters.' });
+  const gmail = sanitizeString(req.body.gmail, 160).toLowerCase();
+  if (passcode.length < 6 || !gmail || !gmail.includes('@')) {
+    res.status(400).json({ error: 'Admin username, password (min 6 characters), and valid Gmail are required.' });
     return;
   }
-  const hash = hashPassword(passcode);
   db.prepare(
-    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, setup_completed = 1, updated_at = datetime('now') WHERE id = 1`
-  ).run(username, hash);
+    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1, updated_at = datetime('now') WHERE id = 1`
+  ).run(username, hashPassword(passcode), hashPassword(gmail));
   const token = signToken({ userId: 0, email: 'admin@shopnexa.global', role: 'admin' });
   res.json({ token, role: 'admin', username });
 });
@@ -443,7 +446,7 @@ app.post('/api/admin/auth/login', authLimiter, (req, res) => {
     .get() as { admin_username: string; admin_password_hash: string; setup_completed: number } | undefined;
 
   const expectedUsername = (row?.admin_username || 'Robiul').toLowerCase();
-  if (usernameInput && usernameInput.toLowerCase() !== expectedUsername) {
+  if (!usernameInput || usernameInput.toLowerCase() !== expectedUsername) {
     res.status(401).json({ error: 'Invalid administrator username or password.' });
     return;
   }
@@ -453,42 +456,90 @@ app.post('/api/admin/auth/login', authLimiter, (req, res) => {
       res.status(401).json({ error: 'Invalid administrator username or password.' });
       return;
     }
-    const token = signToken({ userId: 0, email: 'admin@shopnexa.global', role: 'admin' });
-    res.json({ token, role: 'admin', username: row?.admin_username || 'Robiul' });
+  } else {
+    if (!row || row.setup_completed !== 1) {
+      res.status(400).json({ error: 'Initial administrator setup is required first.' });
+      return;
+    }
+    if (!verifyPassword(passcode, row.admin_password_hash)) {
+      res.status(401).json({ error: 'Invalid administrator username or password.' });
+      return;
+    }
+  }
+
+  const challengeToken = signToken(
+    { userId: 0, email: 'admin-mfa-pending', role: 'admin_mfa_pending' },
+    300
+  );
+  res.json({ requiresGmailVerification: true, challengeToken });
+});
+
+app.post('/api/admin/auth/verify-gmail', authLimiter, (req, res) => {
+  const challengeToken = typeof req.body.challengeToken === 'string' ? req.body.challengeToken.trim() : '';
+  const gmailInput = sanitizeString(req.body.gmail, 160).toLowerCase();
+
+  const payload = verifyToken(challengeToken);
+  if (!payload || payload.role !== 'admin_mfa_pending') {
+    res.status(401).json({ error: 'Verification session expired. Please sign in again.' });
     return;
   }
 
-  if (!row || row.setup_completed !== 1) {
-    res.status(400).json({ error: 'Initial administrator setup is required first.' });
+  const row = db
+    .prepare(`SELECT admin_username, admin_email_hash FROM admin_config WHERE id = 1`)
+    .get() as { admin_username: string; admin_email_hash: string } | undefined;
+
+  if (!row || !gmailInput || !verifyPassword(gmailInput, row.admin_email_hash)) {
+    res.status(401).json({ error: 'Gmail verification failed. Access denied.' });
     return;
   }
-  if (!verifyPassword(passcode, row.admin_password_hash)) {
-    res.status(401).json({ error: 'Invalid administrator username or password.' });
-    return;
-  }
+
   const token = signToken({ userId: 0, email: 'admin@shopnexa.global', role: 'admin' });
   res.json({ token, role: 'admin', username: row.admin_username });
 });
 
+app.get('/api/admin/auth/me', requireAdmin, (_req, res) => {
+  const row = db.prepare(`SELECT admin_username FROM admin_config WHERE id = 1`).get() as
+    | { admin_username: string }
+    | undefined;
+  res.json({ username: row?.admin_username || '' });
+});
+
 app.put('/api/admin/auth/credentials', requireAdmin, (req, res) => {
-  const newUsername = sanitizeString(req.body.username, 60);
-  const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
-  if (!newUsername) {
-    res.status(400).json({ error: 'Admin username is required.' });
+  const newUsername = sanitizeString(req.body.newUsername || req.body.username, 60);
+  const currentPasscode = typeof req.body.currentPasscode === 'string' ? req.body.currentPasscode : '';
+  const newPassword = typeof req.body.newPasscode === 'string'
+    ? req.body.newPasscode
+    : typeof req.body.newPassword === 'string'
+    ? req.body.newPassword
+    : '';
+  const newGmail = sanitizeString(req.body.newGmail, 160).toLowerCase();
+
+  const row = db
+    .prepare(`SELECT admin_username, admin_password_hash, admin_email_hash FROM admin_config WHERE id = 1`)
+    .get() as { admin_username: string; admin_password_hash: string; admin_email_hash: string } | undefined;
+
+  if (!row || !verifyPassword(currentPasscode, row.admin_password_hash)) {
+    res.status(401).json({ error: 'Current admin password is incorrect.' });
     return;
   }
   if (newPassword && newPassword.length < 6) {
     res.status(400).json({ error: 'New password must be at least 6 characters.' });
     return;
   }
-  if (newPassword) {
-    db.prepare(
-      `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, updated_at = datetime('now') WHERE id = 1`
-    ).run(newUsername, hashPassword(newPassword));
-  } else {
-    db.prepare(`UPDATE admin_config SET admin_username = ?, updated_at = datetime('now') WHERE id = 1`).run(newUsername);
+  if (newGmail && !newGmail.includes('@')) {
+    res.status(400).json({ error: 'Please enter a valid Gmail address.' });
+    return;
   }
-  res.json({ success: true, username: newUsername });
+
+  const finalUsername = newUsername || row.admin_username;
+  const finalPassHash = newPassword ? hashPassword(newPassword) : row.admin_password_hash;
+  const finalEmailHash = newGmail ? hashPassword(newGmail) : row.admin_email_hash;
+
+  db.prepare(
+    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, updated_at = datetime('now') WHERE id = 1`
+  ).run(finalUsername, finalPassHash, finalEmailHash);
+
+  res.json({ success: true, username: finalUsername });
 });
 
 // ---------- CUSTOMER ADDRESSES ----------
@@ -660,8 +711,8 @@ app.post('/api/cart/sync', requireAuth, (req: AuthenticatedRequest, res) => {
   res.json({ success: true });
 });
 
-// ---------- AFFILIATE CLICK TRACKING ----------
-app.post('/api/affiliate/track', (req: AuthenticatedRequest, res) => {
+// ---------- AFFILIATE CLICK TRACKING (Admin Dashboard Only) ----------
+app.post('/api/affiliate/track', requireAdmin, (req: AuthenticatedRequest, res) => {
   const productId = Number(req.body.product_id);
   const product = getProductById(productId);
   if (!product || product.product_type !== 'affiliate' || !product.affiliate_url) {
@@ -1870,6 +1921,95 @@ app.get('/api/admin/backup', requireAdmin, (_req, res) => {
     return;
   }
   res.download(DB_PATH, `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`);
+});
+
+app.get('/api/admin/export-zip', requireAdmin, (req, res) => {
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  const zipFilename = `shopnexa-complete-a-to-z-backup-${dateStamp}.zip`;
+
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch {
+    // proceed even if WAL checkpoint is unsupported
+  }
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+
+  const archive = new ZipArchive({ zlib: { level: 6 } });
+
+  archive.on('error', (err: ArchiverError) => {
+    logServerError('/api/admin/export-zip', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to build A-to-Z website ZIP archive' });
+    } else {
+      res.end();
+    }
+  });
+
+  req.on('close', () => {
+    if (!res.writableEnded) {
+      archive.abort();
+    }
+  });
+
+  archive.pipe(res);
+
+  const rootDir = process.cwd();
+  const topDirs = ['src', 'server', 'public', 'uploads'];
+  for (const dirName of topDirs) {
+    const absDir = path.join(rootDir, dirName);
+    if (fs.existsSync(absDir)) {
+      archive.directory(absDir, dirName);
+    }
+  }
+
+  const rootFiles = [
+    'server.ts',
+    'index.html',
+    'package.json',
+    'package-lock.json',
+    'tsconfig.json',
+    'vite.config.ts',
+    'render.yaml',
+    'metadata.json',
+    '.env.example',
+  ];
+  for (const fileName of rootFiles) {
+    const absFile = path.join(rootDir, fileName);
+    if (fs.existsSync(absFile)) {
+      archive.file(absFile, { name: fileName });
+    }
+  }
+
+  if (fs.existsSync(DB_PATH)) {
+    archive.file(DB_PATH, { name: 'data/shopnexa.db' });
+  }
+
+  const fullExportSnapshot = {
+    exportedAt: new Date().toISOString(),
+    siteSettings: getSiteSettings(),
+    categories: db.prepare(`SELECT * FROM categories ORDER BY sort_order ASC, id ASC`).all(),
+    products: getAllProducts(),
+    orders: (db.prepare(`SELECT * FROM orders ORDER BY id DESC`).all() as any[]).map(hydrateOrder),
+    customers: db
+      .prepare(`SELECT id, name, email, phone, role, avatar_url, status, created_at FROM users ORDER BY id DESC`)
+      .all(),
+    coupons: db.prepare(`SELECT * FROM coupons ORDER BY id DESC`).all(),
+    reviews: db.prepare(`SELECT * FROM reviews ORDER BY id DESC`).all(),
+    shippingZones: db.prepare(`SELECT * FROM shipping_zones ORDER BY id ASC`).all(),
+    couriers: db.prepare(`SELECT * FROM couriers ORDER BY id ASC`).all(),
+    paymentSettings: db.prepare(`SELECT * FROM payment_settings ORDER BY id ASC`).all(),
+    paymentRecords: db.prepare(`SELECT * FROM payment_records ORDER BY id DESC`).all(),
+    newsletterSubscribers: db.prepare(`SELECT * FROM newsletter_subscribers ORDER BY id DESC`).all(),
+    affiliateClicks: db.prepare(`SELECT * FROM affiliate_clicks ORDER BY id DESC`).all(),
+  };
+
+  archive.append(JSON.stringify(fullExportSnapshot, null, 2), {
+    name: 'database-a-to-z-export.json',
+  });
+
+  void archive.finalize();
 });
 
 app.get('/api/admin/error-logs', requireAdmin, (_req, res) => {

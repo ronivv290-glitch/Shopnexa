@@ -25,7 +25,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
 export interface TokenPayload {
   userId: number;
   email: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'admin_mfa_pending';
   exp: number;
 }
 
@@ -93,7 +93,7 @@ export function attachOptionalAuth(req: AuthenticatedRequest, _res: Response, ne
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
-  if (!req.auth) {
+  if (!req.auth || req.auth.role === 'admin_mfa_pending') {
     res.status(401).json({ error: 'Authentication required' });
     return;
   }

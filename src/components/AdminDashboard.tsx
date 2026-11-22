@@ -18,6 +18,8 @@ import {
   Printer,
   Send,
   Shield,
+  ExternalLink,
+  KeyRound,
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext.tsx';
 import type {
@@ -61,12 +63,18 @@ export function AdminDashboard() {
   const [authStatus, setAuthStatus] = useState<{
     envConfigured: boolean;
     needsInitialSetup: boolean;
-    adminUsernameHint?: string;
+    requiresUsername?: boolean;
+    requiresGmailVerification?: boolean;
   } | null>(null);
   const [adminUsername, setAdminUsername] = useState('');
   const [passcode, setPasscode] = useState('');
+  const [gmailInput, setGmailInput] = useState('');
+  const [challengeToken, setChallengeToken] = useState('');
+  const [loginStep, setLoginStep] = useState<'credentials' | 'gmail'>('credentials');
+  const [adminDisplayName, setAdminDisplayName] = useState('');
+  const [zipBusy, setZipBusy] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
-  const [credForm, setCredForm] = useState({ currentPasscode: '', newUsername: '', newPasscode: '' });
+  const [credForm, setCredForm] = useState({ currentPasscode: '', newUsername: '', newPasscode: '', newGmail: '' });
   const [credBusy, setCredBusy] = useState(false);
 
   const [tab, setTab] = useState<AdminTab>('overview');
@@ -143,7 +151,7 @@ export function AdminDashboard() {
   const loadAllAdminData = useCallback(async () => {
     if (!adminToken) return;
     const headers = { Authorization: `Bearer ${adminToken}` };
-    const [an, pr, or, cu, af, cp, rv, sh, py, lg] = await Promise.all([
+    const [an, pr, or, cu, af, cp, rv, sh, py, lg, me] = await Promise.all([
       fetch(`/api/admin/analytics?days=${daysFilter}`, { headers }).then((r) => (r.ok ? r.json() : null)),
       fetch('/api/admin/products', { headers }).then((r) => (r.ok ? r.json() : [])),
       fetch('/api/admin/orders', { headers }).then((r) => (r.ok ? r.json() : [])),
@@ -154,8 +162,10 @@ export function AdminDashboard() {
       fetch('/api/admin/shipping', { headers }).then((r) => (r.ok ? r.json() : { zones: [], couriers: [] })),
       fetch('/api/admin/payments', { headers }).then((r) => (r.ok ? r.json() : { settings: [], records: [] })),
       fetch('/api/admin/error-logs', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/auth/me', { headers }).then((r) => (r.ok ? r.json() : null)),
     ]);
     if (an) setAnalytics(an);
+    if (me?.username) setAdminDisplayName(me.username);
     setAdminProducts(pr);
     setOrders(or);
     setCustomers(cu);
@@ -175,19 +185,66 @@ export function AdminDashboard() {
     e.preventDefault();
     setAuthBusy(true);
     try {
-      const endpoint = authStatus?.needsInitialSetup ? '/api/admin/auth/setup' : '/api/admin/auth/login';
-      const res = await fetch(endpoint, {
+      if (authStatus?.needsInitialSetup) {
+        const res = await fetch('/api/admin/auth/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: adminUsername.trim(), passcode, gmail: gmailInput.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || 'Authentication failed', 'error');
+          return;
+        }
+        setAdminSession(data.token);
+        setPasscode('');
+        setGmailInput('');
+        showToast('Admin session authenticated', 'success');
+        return;
+      }
+
+      if (loginStep === 'credentials') {
+        const res = await fetch('/api/admin/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: adminUsername.trim(), passcode }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          showToast(data.error || 'Authentication failed', 'error');
+          return;
+        }
+        if (data.requiresGmailVerification && data.challengeToken) {
+          setChallengeToken(data.challengeToken);
+          setPasscode('');
+          setGmailInput('');
+          setLoginStep('gmail');
+          showToast('Credentials verified. Complete Gmail verification.', 'info');
+          return;
+        }
+        if (data.token) {
+          setAdminSession(data.token);
+          setPasscode('');
+          showToast('Admin session authenticated', 'success');
+        }
+        return;
+      }
+
+      const res = await fetch('/api/admin/auth/verify-gmail', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: adminUsername.trim(), passcode }),
+        body: JSON.stringify({ challengeToken, gmail: gmailInput.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Authentication failed', 'error');
+        showToast(data.error || 'Gmail verification failed', 'error');
         return;
       }
       setAdminSession(data.token);
-      setPasscode('');
+      if (data.username) setAdminDisplayName(data.username);
+      setGmailInput('');
+      setChallengeToken('');
+      setLoginStep('credentials');
       showToast('Admin session authenticated', 'success');
     } finally {
       setAuthBusy(false);
@@ -199,11 +256,15 @@ export function AdminDashboard() {
       <div className="max-w-md mx-auto px-4 py-16">
         <div className="border border-zinc-300 bg-zinc-950 text-white p-8 space-y-6">
           <div className="flex items-center gap-3 text-[#E4C76B]">
-            <Shield className="w-6 h-6" />
+            {loginStep === 'gmail' ? <KeyRound className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
             <div>
               <p className="text-xs font-semibold tracking-[0.2em]">SHOPNEXA CONSOLE</p>
               <h1 className="font-display text-3xl font-semibold text-white">
-                {authStatus?.needsInitialSetup ? 'Claim Administrator Access' : 'Administrator Sign In'}
+                {authStatus?.needsInitialSetup
+                  ? 'Claim Administrator Access'
+                  : loginStep === 'gmail'
+                  ? 'Gmail Verification'
+                  : 'Administrator Sign In'}
               </h1>
             </div>
           </div>
@@ -211,40 +272,96 @@ export function AdminDashboard() {
           <p className="text-xs text-zinc-400 leading-relaxed">
             {authStatus?.needsInitialSetup
               ? 'First-run security setup: configure your Administrator username and password (min 6 characters).'
-              : 'Enter your Administrator username and password to access inventory, orders, payments, affiliate reports, and social links.'}
+              : loginStep === 'gmail'
+              ? 'Step 2 of 2: Enter your authorized administrator Gmail address to unlock the dashboard. Input is masked for privacy.'
+              : 'Step 1 of 2: Enter your Administrator name and password to proceed to Gmail verification.'}
           </p>
 
-          <form onSubmit={handleAdminAuth} className="space-y-4 text-xs">
-            <div>
-              <label className="block text-zinc-300 font-medium mb-1">Admin Username</label>
-              <input
-                type="text"
-                required
-                value={adminUsername}
-                onChange={(e) => setAdminUsername(e.target.value)}
-                placeholder="Enter admin username"
-                className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-300 font-medium mb-1">Admin Password</label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={passcode}
-                onChange={(e) => setPasscode(e.target.value)}
-                placeholder={authStatus?.needsInitialSetup ? 'Create admin password' : 'Enter admin password'}
-                className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
-              />
-            </div>
+          <form onSubmit={handleAdminAuth} className="space-y-4 text-xs" autoComplete="off">
+            {loginStep === 'credentials' || authStatus?.needsInitialSetup ? (
+              <>
+                <div>
+                  <label className="block text-zinc-300 font-medium mb-1">Admin Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={adminUsername}
+                    onChange={(e) => setAdminUsername(e.target.value)}
+                    placeholder="Enter admin name"
+                    className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-zinc-300 font-medium mb-1">Admin Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={passcode}
+                    onChange={(e) => setPasscode(e.target.value)}
+                    placeholder={authStatus?.needsInitialSetup ? 'Create admin password' : 'Enter admin password'}
+                    className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+                  />
+                </div>
+                {authStatus?.needsInitialSetup && (
+                  <div>
+                    <label className="block text-zinc-300 font-medium mb-1">Authorized Gmail</label>
+                    <input
+                      type="password"
+                      required
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={gmailInput}
+                      onChange={(e) => setGmailInput(e.target.value)}
+                      placeholder="Enter authorized admin Gmail"
+                      className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+                    />
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                <label className="block text-zinc-300 font-medium mb-1">Authorized Gmail</label>
+                <input
+                  type="password"
+                  required
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={gmailInput}
+                  onChange={(e) => setGmailInput(e.target.value)}
+                  placeholder="Enter authorized admin Gmail"
+                  className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={authBusy}
               className="w-full py-3 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
             >
-              {authBusy ? 'Verifying...' : authStatus?.needsInitialSetup ? 'Save & Enter Dashboard' : 'Enter Admin Dashboard'}
+              {authBusy
+                ? 'Verifying...'
+                : authStatus?.needsInitialSetup
+                ? 'Save & Enter Dashboard'
+                : loginStep === 'gmail'
+                ? 'Verify Gmail & Enter Dashboard'
+                : 'Continue to Gmail Verification'}
             </button>
+
+            {loginStep === 'gmail' && !authStatus?.needsInitialSetup && (
+              <button
+                type="button"
+                onClick={() => {
+                  setLoginStep('credentials');
+                  setChallengeToken('');
+                  setGmailInput('');
+                }}
+                className="w-full py-2.5 border border-zinc-700 hover:border-zinc-500 text-zinc-300 font-medium transition-colors"
+              >
+                Back to Admin Name & Password
+              </button>
+            )}
           </form>
         </div>
       </div>
@@ -300,6 +417,29 @@ export function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadFullZip = async () => {
+    setZipBusy(true);
+    try {
+      const res = await fetch('/api/admin/export-zip', {
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      if (!res.ok) {
+        showToast('Full website ZIP export failed', 'error');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `shopnexa-complete-a-to-z-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Complete A-to-Z Website ZIP downloaded', 'success');
+    } finally {
+      setZipBusy(false);
+    }
+  };
+
   const navItems: Array<{ id: AdminTab; label: string; icon: any }> = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'products', label: 'Products (Own & Affiliate)', icon: Package },
@@ -319,19 +459,35 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-950">
-      <div className="bg-zinc-950 text-white border-b border-[#C9A227]/30 px-4 sm:px-8 py-4 flex items-center justify-between">
+      <div className="bg-zinc-950 text-white border-b border-[#C9A227]/30 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-[0.2em] text-[#E4C76B]">SHOPNEXA CONTROL CENTER</p>
           <h1 className="font-display text-2xl font-semibold">Administrator Dashboard</h1>
+          {adminDisplayName && (
+            <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
+              Private Admin Session: <span className="text-[#E4C76B] font-semibold">{adminDisplayName}</span>
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={logoutAdmin}
-          className="px-4 py-2 border border-zinc-700 hover:border-[#C9A227] text-xs font-semibold flex items-center gap-2"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Sign Out Admin</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            disabled={zipBusy}
+            onClick={() => void handleDownloadFullZip()}
+            className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold flex items-center gap-2 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>{zipBusy ? 'Preparing ZIP...' : 'Download Full Website ZIP (A–Z)'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={logoutAdmin}
+            className="px-4 py-2 border border-zinc-700 hover:border-[#C9A227] text-xs font-semibold flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out Admin</span>
+          </button>
+        </div>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -608,11 +764,16 @@ export function AdminDashboard() {
             </div>
           )}
 
-          {/* 4. AFFILIATES */}
+          {/* 4. PRIVATE AFFILIATE CATALOG & REPORTS (Admin Only) */}
           {tab === 'affiliates' && (
             <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-2xl font-semibold">AliExpress Affiliate Reports & Click Tracking</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-2xl font-semibold">Private Affiliate Products & Reports</h2>
+                  <p className="text-zinc-500 mt-0.5">
+                    Private Admin Vault: affiliate products added here are visible only inside your Admin Dashboard and never shown to public visitors.
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'affiliate' })}
@@ -620,6 +781,90 @@ export function AdminDashboard() {
                 >
                   + Add Affiliate Product
                 </button>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-semibold text-sm">
+                  Your Affiliate Products ({adminProducts.filter((p) => p.product_type === 'affiliate').length})
+                </h3>
+                <div className="overflow-x-auto border border-zinc-200">
+                  <table className="w-full text-left">
+                    <thead className="bg-zinc-950 text-white">
+                      <tr>
+                        <th className="px-3 py-2">Code</th>
+                        <th className="px-3 py-2">Product</th>
+                        <th className="px-3 py-2">Price</th>
+                        <th className="px-3 py-2">Affiliate Link</th>
+                        <th className="px-3 py-2 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200">
+                      {adminProducts.filter((p) => p.product_type === 'affiliate').length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-4 text-center text-zinc-500">
+                            No affiliate products added yet.
+                          </td>
+                        </tr>
+                      ) : (
+                        adminProducts
+                          .filter((p) => p.product_type === 'affiliate')
+                          .map((p) => (
+                            <tr key={p.id} className="hover:bg-zinc-50">
+                              <td className="px-3 py-2.5 font-mono">{p.product_code}</td>
+                              <td className="px-3 py-2.5 font-semibold">{p.name}</td>
+                              <td className="px-3 py-2.5 font-mono tabular-nums">
+                                {formatPrice(p.sale_price || p.selling_price)}
+                              </td>
+                              <td className="px-3 py-2.5 max-w-xs truncate">
+                                {p.affiliate_url ? (
+                                  <a
+                                    href={p.affiliate_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#9C7A16] hover:underline inline-flex items-center gap-1 font-mono"
+                                  >
+                                    <span>Open Affiliate Link</span>
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                  </a>
+                                ) : (
+                                  <span className="text-zinc-400">No URL</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 text-right space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingProduct({ open: true, product: p, defaultType: 'affiliate' })}
+                                  className="text-zinc-700 hover:text-black inline-flex items-center gap-1"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const res = await fetch(`/api/admin/products/${p.id}`, {
+                                      method: 'DELETE',
+                                      headers: { Authorization: `Bearer ${adminToken}` },
+                                    });
+                                    if (res.ok) {
+                                      await loadAllAdminData();
+                                      await refreshStore();
+                                    } else {
+                                      const d = await res.json();
+                                      showToast(d.error || 'Cannot delete', 'error');
+                                    }
+                                  }}
+                                  className="text-red-600 hover:text-red-800 inline-flex items-center"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               <div className="overflow-x-auto border border-zinc-200">
@@ -637,7 +882,20 @@ export function AdminDashboard() {
                       <tr key={row.id}>
                         <td className="px-3 py-2 font-mono">{row.product_code}</td>
                         <td className="px-3 py-2 font-semibold">{row.name}</td>
-                        <td className="px-3 py-2 font-mono truncate max-w-xs">{row.affiliate_url}</td>
+                        <td className="px-3 py-2 font-mono truncate max-w-xs">
+                          {row.affiliate_url ? (
+                            <a
+                              href={row.affiliate_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#9C7A16] hover:underline"
+                            >
+                              {row.affiliate_url}
+                            </a>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
                         <td className="px-3 py-2 font-mono tabular-nums text-right font-semibold">{row.click_count}</td>
                       </tr>
                     ))}
@@ -982,8 +1240,12 @@ export function AdminDashboard() {
                     <div key={gw.gateway} className="border border-zinc-200 p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-sm">{gw.display_name}</span>
-                        <span className="font-mono text-[11px] text-zinc-500">
-                          {gw.env_configured ? 'Server API Configured' : 'Manual TrxID / Env Unset'}
+                        <span className="font-mono text-[11px] text-emerald-700 font-semibold">
+                          {gw.env_configured
+                            ? 'Server API Active'
+                            : gw.merchant_number
+                            ? `Send Money Active (${gw.merchant_number})`
+                            : 'TrxID Verification Active'}
                         </span>
                       </div>
                       <div className="flex gap-4">
@@ -1358,8 +1620,8 @@ export function AdminDashboard() {
                 <div className="border-t border-zinc-200 pt-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold">Telegram Bot Server Alerts</h3>
-                    <span className="font-mono text-zinc-500">
-                      {settings?.telegram_configured ? 'TELEGRAM_BOT_TOKEN Configured' : 'Set TELEGRAM_BOT_TOKEN in Secrets'}
+                    <span className="font-mono text-emerald-700 font-semibold">
+                      {settings?.telegram_configured ? 'Bot Alerts Active' : 'Telegram Channel & Support Active'}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-4">
@@ -1437,8 +1699,12 @@ export function AdminDashboard() {
                     <input type="text" value={siteForm.brand_name} onChange={(e) => setSiteForm({ ...siteForm, brand_name: e.target.value })} className="w-full border px-3 py-2" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Tagline</label>
+                    <label className="block font-medium mb-1">Main Headline / Tagline</label>
                     <input type="text" value={siteForm.tagline} onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Logo Slogan</label>
+                    <input type="text" value={siteForm.logo_slogan || 'SHOP • DISCOVER • ENJOY'} onChange={(e) => setSiteForm({ ...siteForm, logo_slogan: e.target.value })} className="w-full border px-3 py-2" />
                   </div>
                   <div>
                     <label className="block font-medium mb-1">Hero Title</label>
@@ -1455,6 +1721,22 @@ export function AdminDashboard() {
                   <div>
                     <label className="block font-medium mb-1">Business Location / Address</label>
                     <input type="text" value={siteForm.business_address} onChange={(e) => setSiteForm({ ...siteForm, business_address: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Customer App Download Visibility</label>
+                    <select
+                      value={siteForm.customer_download_buyers_only === false ? 'public' : 'buyers_only'}
+                      onChange={(e) =>
+                        setSiteForm({
+                          ...siteForm,
+                          customer_download_buyers_only: e.target.value !== 'public',
+                        })
+                      }
+                      className="w-full border px-3 py-2 bg-white"
+                    >
+                      <option value="buyers_only">Buyers Only (Visible only after product purchase)</option>
+                      <option value="public">Public (Visible to all storefront visitors)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1477,7 +1759,7 @@ export function AdminDashboard() {
                     if (!res.ok) {
                       showToast(d.error || 'Failed to update admin credentials', 'error');
                     } else {
-                      setCredForm({ currentPasscode: '', newUsername: '', newPasscode: '' });
+                      setCredForm({ currentPasscode: '', newUsername: '', newPasscode: '', newGmail: '' });
                       showToast('Administrator credentials updated', 'success');
                     }
                   } finally {
@@ -1486,8 +1768,8 @@ export function AdminDashboard() {
                 }}
                 className="bg-white border border-zinc-200 p-6 space-y-4"
               >
-                <h3 className="text-sm font-semibold">Administrator Credentials</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <h3 className="text-sm font-semibold">Administrator Credentials & Hidden Verification Gmail</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block font-medium mb-1">Current Password *</label>
                     <input
@@ -1499,7 +1781,7 @@ export function AdminDashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">New Username (Optional)</label>
+                    <label className="block font-medium mb-1">New Admin Name (Optional)</label>
                     <input
                       type="text"
                       value={credForm.newUsername}
@@ -1519,6 +1801,17 @@ export function AdminDashboard() {
                       className="w-full border px-3 py-2"
                     />
                   </div>
+                  <div>
+                    <label className="block font-medium mb-1">New Verification Gmail (Hidden)</label>
+                    <input
+                      type="password"
+                      autoComplete="off"
+                      value={credForm.newGmail}
+                      onChange={(e) => setCredForm({ ...credForm, newGmail: e.target.value })}
+                      placeholder="Leave blank to keep hidden Gmail"
+                      className="w-full border px-3 py-2"
+                    />
+                  </div>
                 </div>
                 <button type="submit" disabled={credBusy} className="px-5 py-2 bg-zinc-950 text-white font-semibold">
                   {credBusy ? 'Updating...' : 'Update Admin Credentials'}
@@ -1527,17 +1820,30 @@ export function AdminDashboard() {
 
               <div className="bg-white border border-zinc-200 p-6 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-sm font-semibold">Database Backup & System Logs</h3>
-                  <p className="text-zinc-500 mt-0.5">Download a full SQLite snapshot of products, orders, users, and settings.</p>
+                  <h3 className="text-sm font-semibold">Complete Website A-to-Z Archive & Database Backup</h3>
+                  <p className="text-zinc-500 mt-0.5">
+                    Download the complete SHOPNEXA website package (all code, media, products, orders, settings & SQLite database) or the standalone database file.
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void handleDownloadBackup()}
-                  className="px-4 py-2 bg-[#C9A227] text-black font-semibold flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Database Backup (.db)</span>
-                </button>
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    type="button"
+                    disabled={zipBusy}
+                    onClick={() => void handleDownloadFullZip()}
+                    className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>{zipBusy ? 'Preparing A–Z ZIP...' : 'Download Full Website ZIP (A–Z)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDownloadBackup()}
+                    className="px-4 py-2 border border-zinc-950 text-zinc-950 hover:bg-zinc-950 hover:text-white font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download Database (.db)</span>
+                  </button>
+                </div>
               </div>
 
               {errorLogs.length > 0 && (

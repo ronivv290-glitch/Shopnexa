@@ -13,6 +13,7 @@ import {
 import { useStore } from '../context/StoreContext.tsx';
 import type { CustomerAddress, Order } from '../types.ts';
 import { ProductCard } from './ProductCard.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 export function CustomerAccountView({ initialTab = 'profile' }: { initialTab?: string }) {
   const {
@@ -27,6 +28,7 @@ export function CustomerAccountView({ initialTab = 'profile' }: { initialTab?: s
     formatPrice,
     navigate,
     showToast,
+    markBuyerVerified,
   } = useStore();
 
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
@@ -71,7 +73,12 @@ export function CustomerAccountView({ initialTab = 'profile' }: { initialTab?: s
 
     fetch('/api/orders/my', { headers: { Authorization: `Bearer ${authToken}` } })
       .then((r) => (r.ok ? r.json() : []))
-      .then(setOrders)
+      .then((list: Order[]) => {
+        setOrders(list);
+        if (list.length > 0) {
+          markBuyerVerified();
+        }
+      })
       .catch(() => {});
 
     fetch('/api/addresses', { headers: { Authorization: `Bearer ${authToken}` } })
@@ -80,7 +87,7 @@ export function CustomerAccountView({ initialTab = 'profile' }: { initialTab?: s
       .catch(() => {});
 
     void refreshNotifications();
-  }, [authToken, user, refreshNotifications]);
+  }, [authToken, user, refreshNotifications, markBuyerVerified]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -504,6 +511,17 @@ export function CustomerAccountView({ initialTab = 'profile' }: { initialTab?: s
 
           {tab === 'orders' && (
             <div className="space-y-4">
+              {orders.length > 0 && (
+                <div className="bg-zinc-950 text-white border border-[#C9A227]/40 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs">
+                    <p className="font-semibold text-[#E4C76B] tracking-wider">BUYER APP DOWNLOAD</p>
+                    <p className="text-zinc-300 mt-0.5">
+                      Available for verified buyers — browse products and track your orders directly.
+                    </p>
+                  </div>
+                  <PWAInstallButton variant="banner" label="Download SHOPNEXA App" />
+                </div>
+              )}
               {orders.length === 0 ? (
                 <div className="border border-zinc-200 p-8 text-xs text-zinc-500">
                   You have not placed any direct orders yet.

@@ -70,6 +70,10 @@ interface StoreContextValue {
 
   lastCompletedOrder: Order | null;
   setLastCompletedOrder: (order: Order | null) => void;
+  hasPurchasedProduct: boolean;
+  markBuyerVerified: () => void;
+  canShowCustomerDownload: boolean;
+  isBuyerAppMode: boolean;
 
   refreshStore: () => Promise<void>;
   toast: { message: string; type: 'success' | 'error' | 'info' } | null;
@@ -110,8 +114,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [wishlistIds, setWishlistIds] = useState<number[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [lastCompletedOrder, setLastCompletedOrder] = useState<Order | null>(null);
+  const [lastCompletedOrder, setLastCompletedOrderState] = useState<Order | null>(null);
+  const [hasPurchasedProduct, setHasPurchasedProduct] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('shopnexa_buyer_verified') === '1';
+    } catch {
+      return false;
+    }
+  });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const isBuyerAppMode =
+    typeof window !== 'undefined' &&
+    (new URLSearchParams(window.location.search).get('buyer_app') === '1' ||
+      Boolean(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+
+  const markBuyerVerified = useCallback(() => {
+    setHasPurchasedProduct(true);
+    try {
+      localStorage.setItem('shopnexa_buyer_verified', '1');
+    } catch {
+      // ignore storage failure
+    }
+  }, []);
+
+  const setLastCompletedOrder = useCallback(
+    (order: Order | null) => {
+      setLastCompletedOrderState(order);
+      if (order) {
+        markBuyerVerified();
+      }
+    },
+    [markBuyerVerified]
+  );
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
@@ -120,10 +155,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }, 4000);
   }, []);
 
-  const navigate = useCallback((next: ActiveRoute) => {
-    setRoute(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  const navigate = useCallback(
+    (next: ActiveRoute) => {
+      if (isBuyerAppMode && next.page === 'admin') {
+        setRoute({ page: 'home' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      setRoute(next);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    [isBuyerAppMode]
+  );
 
   const refreshStore = useCallback(async () => {
     try {
@@ -195,18 +238,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setAuthToken(token);
       setUser(nextUser);
       void (async () => {
-        const [wishRes, notifRes] = await Promise.all([
+        const [wishRes, notifRes, ordersRes] = await Promise.all([
           fetch('/api/wishlist', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/notifications', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/orders/my', { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         if (wishRes.ok) setWishlistIds(await wishRes.json());
         if (notifRes.ok) setNotifications(await notifRes.json());
+        if (ordersRes.ok) {
+          const myOrders = await ordersRes.json();
+          if (Array.isArray(myOrders) && myOrders.length > 0) {
+            markBuyerVerified();
+          }
+        }
         if (cart.length > 0) {
           await syncCartToServer(cart, token);
         }
       })();
     },
-    [cart, syncCartToServer]
+    [cart, markBuyerVerified, syncCartToServer]
   );
 
   const setAdminSession = useCallback((token: string) => {
@@ -390,6 +440,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [currency, exchangeRates]
   );
 
+  const canShowCustomerDownload = Boolean(
+    settings && (settings.customer_download_buyers_only === false || hasPurchasedProduct)
+  );
+
   return (
     <StoreContext.Provider
       value={{
@@ -428,6 +482,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         refreshNotifications,
         lastCompletedOrder,
         setLastCompletedOrder,
+        hasPurchasedProduct,
+        markBuyerVerified,
+        canShowCustomerDownload,
+        isBuyerAppMode,
         refreshStore,
         toast,
         showToast,

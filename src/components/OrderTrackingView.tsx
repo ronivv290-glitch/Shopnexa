@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 export function OrderTrackingView({ initialOrderNumber = '' }: { initialOrderNumber?: string }) {
-  const { formatPrice } = useStore();
+  const { formatPrice, markBuyerVerified } = useStore();
   const [query, setQuery] = useState(initialOrderNumber);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
@@ -22,6 +23,7 @@ export function OrderTrackingView({ initialOrderNumber = '' }: { initialOrderNum
         return;
       }
       setResult(data);
+      markBuyerVerified();
     } finally {
       setLoading(false);
     }
@@ -137,6 +139,14 @@ export function OrderTrackingView({ initialOrderNumber = '' }: { initialOrderNum
               <span>Total</span>
               <span className="font-mono tabular-nums">{formatPrice(result.final_total)}</span>
             </div>
+          </div>
+
+          <div className="bg-zinc-950 text-white border border-[#C9A227]/40 p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs">
+              <p className="font-semibold text-[#E4C76B] tracking-wider">BUYER APP DOWNLOAD</p>
+              <p className="text-zinc-300 mt-0.5">Install the SHOPNEXA Buyer App for products and live tracking.</p>
+            </div>
+            <PWAInstallButton variant="banner" label="Download App" />
           </div>
         </div>
       )}

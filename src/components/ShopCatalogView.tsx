@@ -15,13 +15,13 @@ export function ShopCatalogView({
   initialSearch = '',
 }: ShopCatalogViewProps) {
   const { products, categories } = useStore();
-  const [filter, setFilter] = useState(initialFilter);
+  const [filter, setFilter] = useState(initialFilter && initialFilter !== 'affiliate' ? initialFilter : 'all');
   const [categoryId, setCategoryId] = useState<number | 'all'>(initialCategoryId ?? 'all');
   const [search, setSearch] = useState(initialSearch);
   const [sortBy, setSortBy] = useState<'newest' | 'price-asc' | 'price-desc' | 'discount'>('newest');
 
   React.useEffect(() => {
-    setFilter(initialFilter || 'all');
+    setFilter(initialFilter && initialFilter !== 'affiliate' ? initialFilter : 'all');
   }, [initialFilter]);
 
   React.useEffect(() => {
@@ -35,8 +35,7 @@ export function ShopCatalogView({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = products.filter((p) => {
-      if (filter === 'own' && p.product_type !== 'own') return false;
-      if (filter === 'affiliate' && p.product_type !== 'affiliate') return false;
+      if (p.product_type !== 'own') return false;
       if (filter === 'discount' && p.discount_percentage <= 0 && !p.is_special_offer) return false;
       if (filter === 'new' && !p.is_new_arrival) return false;
       if (filter === 'featured' && !p.is_featured) return false;
@@ -60,8 +59,7 @@ export function ShopCatalogView({
 
   const filterTabs = [
     { id: 'all', label: 'All Products' },
-    { id: 'own', label: 'Own Products' },
-    { id: 'affiliate', label: 'Affiliate Products' },
+    { id: 'own', label: 'Direct Vault' },
     { id: 'discount', label: 'Discount Products' },
     { id: 'new', label: 'New Collections' },
     { id: 'featured', label: 'Featured Collections' },

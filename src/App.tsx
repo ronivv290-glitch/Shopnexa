@@ -12,9 +12,10 @@ import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { CartDrawer } from './components/CartDrawer.tsx';
 import { FloatingTelegramSupport } from './components/FloatingTelegramSupport.tsx';
 import { Footer } from './components/Footer.tsx';
+import { OfflineIndicator } from './components/OfflineIndicator.tsx';
 
 function StorefrontShell() {
-  const { loading, route, settings, language, toast } = useStore();
+  const { loading, route, settings, language, toast, isBuyerAppMode } = useStore();
 
   useEffect(() => {
     document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
@@ -56,12 +57,13 @@ function StorefrontShell() {
         {route.page === 'account' && <CustomerAccountView initialTab={route.tab} />}
         {route.page === 'track' && <OrderTrackingView initialOrderNumber={route.orderNumber} />}
         {route.page === 'policy' && <PolicyView policyKey={route.policyKey} />}
-        {route.page === 'admin' && <AdminDashboard />}
+        {route.page === 'admin' && (isBuyerAppMode ? <HomeView /> : <AdminDashboard />)}
       </main>
 
       <Footer />
       <CartDrawer />
       <FloatingTelegramSupport />
+      <OfflineIndicator />
 
       {toast && (
         <div

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Facebook, Youtube, Send, Instagram, Mail, MapPin, Headphones } from 'lucide-react';
 import { useStore } from '../context/StoreContext.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 export function Footer() {
-  const { settings, navigate } = useStore();
+  const { settings, navigate, canShowCustomerDownload } = useStore();
 
   return (
     <footer className="bg-zinc-950 text-zinc-300 border-t border-[#C9A227]/30">
@@ -15,7 +16,10 @@ export function Footer() {
               {settings?.brand_name || 'SHOPNEXA'}
             </h2>
             <p className="text-xs font-semibold tracking-[0.2em] text-[#E4C76B]">
-              {settings?.tagline || 'THE FUTURE OF SHOPPING'}
+              {settings?.tagline || 'THE FUTURE OF SHOPPING 🛍️'}
+            </p>
+            <p className="text-[10px] font-medium tracking-[0.24em] text-zinc-400">
+              {settings?.logo_slogan || 'SHOP • DISCOVER • ENJOY'}
             </p>
           </div>
           <p className="text-xs text-zinc-400 leading-relaxed max-w-sm">
@@ -94,6 +98,7 @@ export function Footer() {
               <Headphones className="w-3.5 h-3.5" />
               <span>Telegram Support</span>
             </a>
+            {canShowCustomerDownload && <PWAInstallButton variant="footer" label="Download App" />}
           </div>
         </div>
 
@@ -150,12 +155,12 @@ export function Footer() {
             </li>
             <li>
               <button type="button" onClick={() => navigate({ page: 'shop', filter: 'own' })} className="hover:text-[#E4C76B]">
-                Own Products
+                Direct Collection
               </button>
             </li>
             <li>
-              <button type="button" onClick={() => navigate({ page: 'shop', filter: 'affiliate' })} className="hover:text-[#E4C76B]">
-                Affiliate Products
+              <button type="button" onClick={() => navigate({ page: 'shop', filter: 'discount' })} className="hover:text-[#E4C76B]">
+                Special Offers
               </button>
             </li>
             <li>
@@ -171,11 +176,6 @@ export function Footer() {
             <li>
               <button type="button" onClick={() => navigate({ page: 'policy', policyKey: 'terms_conditions' })} className="hover:text-[#E4C76B]">
                 Terms & Conditions
-              </button>
-            </li>
-            <li>
-              <button type="button" onClick={() => navigate({ page: 'policy', policyKey: 'affiliate_disclosure' })} className="hover:text-[#E4C76B]">
-                Affiliate Disclosure
               </button>
             </li>
           </ul>
@@ -212,7 +212,7 @@ export function Footer() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
           <p>© {new Date().getFullYear()} {settings?.brand_name || 'SHOPNEXA'}. All rights reserved.</p>
           <p className="text-center sm:text-right">
-            Direct Vault Checkout & Verified AliExpress Partner Marketplace
+            SHOP • DISCOVER • ENJOY — Global Direct Marketplace · Rangpur, Bangladesh
           </p>
         </div>
       </div>

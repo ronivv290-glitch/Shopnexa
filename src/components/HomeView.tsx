@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Truck,
   Headphones,
-  ExternalLink,
   Star,
   Send,
   Youtube,
@@ -17,9 +16,10 @@ import { useStore } from '../context/StoreContext.tsx';
 import { t } from '../i18n.ts';
 import { ProductCard } from './ProductCard.tsx';
 import { SmartImage } from './SmartImage.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 export function HomeView({ initialSection }: { initialSection?: string }) {
-  const { settings, categories, products, reviews, navigate, language, showToast } = useStore();
+  const { settings, categories, products, reviews, navigate, language, showToast, canShowCustomerDownload } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'featured' | 'new-arrivals' | 'trending' | 'best-sellers' | 'special-offers'>('featured');
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -41,7 +41,6 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
 
   const featuredCats = categories.filter((c) => c.is_featured === 1).slice(0, 8);
   const ownProducts = products.filter((p) => p.product_type === 'own').slice(0, 6);
-  const affiliateProducts = products.filter((p) => p.product_type === 'affiliate').slice(0, 3);
   const recommendedProducts = products.filter((p) => p.is_recommended).slice(0, 3);
 
   const tabProducts = products.filter((p) => {
@@ -88,7 +87,10 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
           <div className="lg:col-span-6 flex flex-col justify-center space-y-6">
             <div className="space-y-3">
               <p className="text-xs font-semibold tracking-[0.22em] text-[#E4C76B]">
-                {settings?.brand_name || 'SHOPNEXA'} · {settings?.tagline || t(language, 'tagline')}
+                {settings?.brand_name || 'SHOPNEXA'} – {settings?.tagline || 'THE FUTURE OF SHOPPING 🛍️'}
+              </p>
+              <p className="text-[11px] font-medium tracking-[0.26em] text-zinc-400">
+                {settings?.logo_slogan || 'SHOP • DISCOVER • ENJOY'}
               </p>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.06] text-balance text-white">
                 {settings?.hero_title || 'Curated Luxury, Direct & Global Discovery'}
@@ -132,13 +134,7 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
               >
                 {t(language, 'ownProducts')}
               </button>
-              <button
-                type="button"
-                onClick={() => navigate({ page: 'shop', filter: 'affiliate' })}
-                className="px-6 py-3 border border-zinc-800 hover:border-[#C9A227] text-[#E4C76B] text-xs font-semibold tracking-wide transition-colors"
-              >
-                {t(language, 'affiliateProducts')}
-              </button>
+              {canShowCustomerDownload && <PWAInstallButton variant="footer" label="Download App" />}
             </div>
           </div>
 
@@ -152,7 +148,7 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
             <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 text-xs">
               <div>
                 <p className="text-[#E4C76B] font-semibold tracking-wider">WORLDWIDE DESTINATION</p>
-                <p className="text-zinc-200 mt-0.5">Direct Bangladesh & Global Fulfillment + AliExpress Partner Links</p>
+                <p className="text-zinc-200 mt-0.5">Direct Bangladesh & Global Fulfillment</p>
               </div>
             </div>
           </div>
@@ -273,23 +269,24 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
         </div>
       </section>
 
-      {/* 5. PROMOTIONAL BANNER */}
+      {/* 5. PROMOTIONAL & APP DOWNLOAD BANNER */}
       <section className="bg-zinc-950 text-white border-y border-[#C9A227]/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <p className="text-xs font-semibold tracking-[0.2em] text-[#E4C76B]">HYBRID GLOBAL MARKETPLACE</p>
+            <p className="text-xs font-semibold tracking-[0.2em] text-[#E4C76B]">SHOPNEXA MOBILE APP & DIRECT VAULT</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white">
-              Two Seamless Ways to Shop Worldwide
+              Shop Worldwide & Install the SHOPNEXA App
             </h2>
             <p className="text-sm text-zinc-300 leading-relaxed">
-              Enjoy direct SHOPNEXA inventory with full color, size, and model customization—or explore curated AliExpress partner finds redirected via verified affiliate links.
+              Enjoy curated direct SHOPNEXA inventory with full color, size, and model customization, fast Bangladesh & worldwide delivery, and one-tap app access on mobile or desktop.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 shrink-0">
+            {canShowCustomerDownload && <PWAInstallButton variant="banner" label="Download SHOPNEXA App" />}
             <button
               type="button"
               onClick={() => navigate({ page: 'shop', filter: 'discount' })}
-              className="px-5 py-3 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold whitespace-nowrap"
+              className="px-5 py-3 bg-white hover:bg-[#E4C76B] text-black text-xs font-semibold whitespace-nowrap"
             >
               View Special Offers
             </button>
@@ -304,36 +301,7 @@ export function HomeView({ initialSection }: { initialSection?: string }) {
         </div>
       </section>
 
-      {/* 6. AFFILIATE PRODUCTS SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-b border-zinc-200">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-[#9C7A16]">GLOBAL PARTNER DISCOVERY</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-zinc-950 mt-1">
-              {t(language, 'affiliateProducts')}
-            </h2>
-            <p className="text-sm text-zinc-600 mt-1">
-              Inspect full specifications and variations here, then complete your purchase securely on AliExpress.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate({ page: 'shop', filter: 'affiliate' })}
-            className="px-4 py-2 border border-zinc-950 text-xs font-semibold hover:bg-zinc-950 hover:text-white transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5"
-          >
-            <span>Explore Partner Catalog</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {affiliateProducts.map((prod) => (
-            <ProductCard key={prod.id} product={prod} />
-          ))}
-        </div>
-      </section>
-
-      {/* 7. RECOMMENDED PRODUCTS & SHOPPING BENEFITS */}
+      {/* 6. RECOMMENDED PRODUCTS & SHOPPING BENEFITS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-b border-zinc-200">
         <div className="mb-8">
           <p className="text-xs font-semibold tracking-[0.18em] text-[#9C7A16]">HANDPICKED</p>

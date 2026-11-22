@@ -3,6 +3,7 @@ import { ShieldCheck, Printer, CheckCircle2, Tag, MapPin, Lock, Copy, Check } fr
 import { useStore } from '../context/StoreContext.tsx';
 import type { CustomerAddress, PaymentMethod } from '../types.ts';
 import { SmartImage } from './SmartImage.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 const BD_DIVISIONS = ['Dhaka', 'Chattogram', 'Rajshahi', 'Khulna', 'Barishal', 'Sylhet', 'Rangpur', 'Mymensingh'];
 const COUNTRIES = [
@@ -311,7 +312,17 @@ export function CheckoutView() {
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="bg-zinc-950 text-white border border-[#C9A227]/40 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold tracking-[0.18em] text-[#E4C76B]">BUYER EXCLUSIVE ACCESS</p>
+              <p className="text-xs text-zinc-200">
+                Download the SHOPNEXA Buyer App to browse products and track your order in one tap.
+              </p>
+            </div>
+            <PWAInstallButton variant="banner" label="Download SHOPNEXA App" />
+          </div>
+
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={() => {

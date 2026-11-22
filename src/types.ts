@@ -322,6 +322,7 @@ export interface PaymentSetting {
 export interface SiteSettings {
   brand_name: string;
   tagline: string;
+  logo_slogan?: string;
   logo_url: string;
   hero_title: string;
   hero_subtitle: string;
@@ -357,6 +358,7 @@ export interface SiteSettings {
   terms_conditions: string;
   affiliate_disclosure: string;
   email_notifications_enabled: boolean;
+  customer_download_buyers_only?: boolean;
   telegram_configured?: boolean;
 }
 

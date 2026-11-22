@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../context/StoreContext.tsx';
 import { CURRENCIES, t, type LanguageCode } from '../i18n.ts';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 export function Header() {
   const {
@@ -28,12 +29,13 @@ export function Header() {
     wishlistIds,
     user,
     adminToken,
+    canShowCustomerDownload,
+    isBuyerAppMode,
   } = useStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [openMenu, setOpenMenu] = useState<'home' | 'shop' | 'categories' | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [promoDismissed, setPromoDismissed] = useState(false);
 
   const totalCartQty = cart.reduce((sum, i) => sum + i.quantity, 0);
 
@@ -55,7 +57,6 @@ export function Header() {
   const shopItems = [
     { label: t(language, 'allProducts'), action: () => navigate({ page: 'shop', filter: 'all' }) },
     { label: t(language, 'ownProducts'), action: () => navigate({ page: 'shop', filter: 'own' }) },
-    { label: t(language, 'affiliateProducts'), action: () => navigate({ page: 'shop', filter: 'affiliate' }) },
     { label: t(language, 'discountProducts'), action: () => navigate({ page: 'shop', filter: 'discount' }) },
     { label: t(language, 'newCollections'), action: () => navigate({ page: 'shop', filter: 'new' }) },
     { label: t(language, 'featuredCollections'), action: () => navigate({ page: 'shop', filter: 'featured' }) },
@@ -63,39 +64,12 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-zinc-950 text-white border-b border-[#C9A227]/25">
-      {settings?.promo_banner_enabled && !promoDismissed && (
-        <div className="bg-black text-zinc-200 border-b border-zinc-800/80 px-4 py-1.5 text-xs flex items-center justify-between max-w-full">
+      {settings?.promo_banner_enabled && settings?.promo_banner_text?.trim() && (
+        <div className="bg-black text-zinc-200 border-b border-zinc-800/80 px-4 py-1.5 text-xs">
           <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
             <span className="truncate font-medium tracking-wide text-[#E4C76B]">
               {settings.promo_banner_text}
             </span>
-            <div className="hidden md:flex items-center gap-4 shrink-0 text-zinc-400">
-              <button
-                type="button"
-                onClick={() => navigate({ page: 'track' })}
-                className="hover:text-[#E4C76B] transition-colors flex items-center gap-1 whitespace-nowrap"
-              >
-                <Truck className="w-3.5 h-3.5" />
-                <span>{t(language, 'trackOrder')}</span>
-              </button>
-              <span aria-hidden="true">·</span>
-              <button
-                type="button"
-                onClick={() => navigate({ page: 'admin' })}
-                className="hover:text-[#E4C76B] transition-colors flex items-center gap-1 whitespace-nowrap"
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>{adminToken ? 'Admin Active' : t(language, 'admin')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPromoDismissed(true)}
-                aria-label="Dismiss announcement"
-                className="text-zinc-500 hover:text-white ml-2"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -129,9 +103,14 @@ export function Header() {
                 S
               </span>
             )}
-            <span className="font-display text-xl sm:text-2xl font-semibold tracking-[0.14em] text-white">
-              {settings?.brand_name || 'SHOPNEXA'}
-            </span>
+            <div className="flex flex-col leading-none">
+              <span className="font-display text-xl sm:text-2xl font-semibold tracking-[0.14em] text-white leading-none">
+                {settings?.brand_name || 'SHOPNEXA'}
+              </span>
+              <span className="text-[9px] font-semibold tracking-[0.22em] text-[#E4C76B] mt-1">
+                {settings?.logo_slogan || 'SHOP • DISCOVER • ENJOY'}
+              </span>
+            </div>
           </button>
         </div>
 
@@ -292,6 +271,28 @@ export function Header() {
 
           <button
             type="button"
+            onClick={() => navigate({ page: 'track' })}
+            className="hidden md:flex p-2 text-zinc-300 hover:text-[#E4C76B] transition-colors"
+            aria-label={t(language, 'trackOrder')}
+            title={t(language, 'trackOrder')}
+          >
+            <Truck className="w-4 h-4" />
+          </button>
+
+          {!isBuyerAppMode && (
+            <button
+              type="button"
+              onClick={() => navigate({ page: 'admin' })}
+              className="hidden md:flex p-2 text-zinc-300 hover:text-[#E4C76B] transition-colors"
+              aria-label={adminToken ? 'Admin Active' : t(language, 'admin')}
+              title={adminToken ? 'Admin Active' : t(language, 'admin')}
+            >
+              <ShieldCheck className="w-4 h-4" />
+            </button>
+          )}
+
+          <button
+            type="button"
             onClick={() => navigate({ page: 'account', tab: 'profile' })}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:text-[#E4C76B] transition-colors whitespace-nowrap"
             aria-label="Customer Account"
@@ -324,6 +325,12 @@ export function Header() {
             <span className="hidden sm:inline">{t(language, 'cart')}</span>
             <span className="font-mono tabular-nums font-bold">({totalCartQty})</span>
           </button>
+
+          {canShowCustomerDownload && (
+            <div className="hidden md:block">
+              <PWAInstallButton variant="header" label="Download App" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -420,7 +427,7 @@ export function Header() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 pt-2 border-t border-zinc-800">
+            <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-zinc-800">
               <button
                 type="button"
                 onClick={() => {
@@ -431,16 +438,19 @@ export function Header() {
               >
                 {t(language, 'trackOrder')}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate({ page: 'admin' });
-                  setMobileOpen(false);
-                }}
-                className="text-xs font-medium text-zinc-300"
-              >
-                {t(language, 'admin')}
-              </button>
+              {!isBuyerAppMode && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate({ page: 'admin' });
+                    setMobileOpen(false);
+                  }}
+                  className="text-xs font-medium text-zinc-300"
+                >
+                  {t(language, 'admin')}
+                </button>
+              )}
+              {canShowCustomerDownload && <PWAInstallButton variant="header" label="Download App" />}
             </div>
           </div>
         </div>
