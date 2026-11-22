@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   Download,
+  Upload,
   LogOut,
   Plus,
   Trash2,
@@ -74,6 +75,9 @@ export function AdminDashboard() {
   const [loginStep, setLoginStep] = useState<'credentials' | 'gmail'>('credentials');
   const [adminDisplayName, setAdminDisplayName] = useState('');
   const [zipBusy, setZipBusy] = useState(false);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const restoreInputRef = useRef<HTMLInputElement | null>(null);
   const [authBusy, setAuthBusy] = useState(false);
   const [credForm, setCredForm] = useState({ currentPasscode: '', newUsername: '', newPasscode: '', newGmail: '' });
   const [credBusy, setCredBusy] = useState(false);
@@ -99,6 +103,8 @@ export function AdminDashboard() {
     records: [],
   });
   const [errorLogs, setErrorLogs] = useState<any[]>([]);
+  const [blockedGmails, setBlockedGmails] = useState<any[]>([]);
+  const [blockedNotice, setBlockedNotice] = useState('');
 
   const [editingProduct, setEditingProduct] = useState<{ open: boolean; product: Product | null; defaultType: 'own' | 'affiliate' }>({
     open: false,
@@ -152,7 +158,7 @@ export function AdminDashboard() {
   const loadAllAdminData = useCallback(async () => {
     if (!adminToken) return;
     const headers = { Authorization: `Bearer ${adminToken}` };
-    const [an, pr, or, cu, af, cp, rv, sh, py, lg, me] = await Promise.all([
+    const [an, pr, or, cu, af, cp, rv, sh, py, lg, bg, me] = await Promise.all([
       fetch(`/api/admin/analytics?days=${daysFilter}`, { headers }).then((r) => (r.ok ? r.json() : null)),
       fetch('/api/admin/products', { headers }).then((r) => (r.ok ? r.json() : [])),
       fetch('/api/admin/orders', { headers }).then((r) => (r.ok ? r.json() : [])),
@@ -163,6 +169,7 @@ export function AdminDashboard() {
       fetch('/api/admin/shipping', { headers }).then((r) => (r.ok ? r.json() : { zones: [], couriers: [] })),
       fetch('/api/admin/payments', { headers }).then((r) => (r.ok ? r.json() : { settings: [], records: [] })),
       fetch('/api/admin/error-logs', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/blocked-gmails', { headers }).then((r) => (r.ok ? r.json() : [])),
       fetch('/api/admin/auth/me', { headers }).then((r) => (r.ok ? r.json() : null)),
     ]);
     if (an) setAnalytics(an);
@@ -176,6 +183,7 @@ export function AdminDashboard() {
     setShippingData(sh);
     setPaymentData(py);
     setErrorLogs(lg);
+    setBlockedGmails(bg);
   }, [adminToken, daysFilter]);
 
   useEffect(() => {
@@ -205,6 +213,7 @@ export function AdminDashboard() {
       }
 
       if (loginStep === 'credentials') {
+        setBlockedNotice('');
         const res = await fetch('/api/admin/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -238,9 +247,17 @@ export function AdminDashboard() {
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.error || 'Gmail verification failed', 'error');
+        const msg = data.error || 'Gmail verification failed';
+        showToast(msg, 'error');
+        if (data.blocked || res.status === 403 || res.status === 401) {
+          setBlockedNotice(msg);
+          setChallengeToken('');
+          setGmailInput('');
+          setLoginStep('credentials');
+        }
         return;
       }
+      setBlockedNotice('');
       setAdminSession(data.token);
       if (data.username) setAdminDisplayName(data.username);
       setGmailInput('');
@@ -274,9 +291,15 @@ export function AdminDashboard() {
             {authStatus?.needsInitialSetup
               ? 'First-run security setup: configure your Administrator username and password (min 6 characters).'
               : loginStep === 'gmail'
-              ? 'Step 2 of 2: Enter your authorized administrator Gmail address to unlock the dashboard. Input is masked for privacy.'
+              ? 'Step 2 of 2: Enter your authorized administrator Gmail address to unlock the dashboard. Any unauthorized Gmail will be blocked immediately.'
               : 'Step 1 of 2: Enter your Administrator name and password to proceed to Gmail verification.'}
           </p>
+
+          {blockedNotice && (
+            <div className="border border-red-700/70 bg-red-950/40 px-4 py-3 text-xs text-red-200 leading-relaxed">
+              {blockedNotice}
+            </div>
+          )}
 
           <form onSubmit={handleAdminAuth} className="space-y-4 text-xs" autoComplete="off">
             {loginStep === 'credentials' || authStatus?.needsInitialSetup ? (
@@ -477,6 +500,50 @@ export function AdminDashboard() {
       showToast('Full website ZIP export failed', 'error');
     } finally {
       setZipBusy(false);
+    }
+  };
+
+  const handleSelectRestoreFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    e.target.value = '';
+    if (!file) return;
+    setRestoreFile(file);
+  };
+
+  const handleConfirmRestoreBackup = async () => {
+    if (!restoreFile) return;
+    setRestoreBusy(true);
+    try {
+      const formData = new FormData();
+      formData.append('database', restoreFile);
+      const res = await fetch('/api/admin/restore-backup', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${adminToken}` },
+        body: formData,
+      });
+      if (res.status === 401 || res.status === 403) {
+        logoutAdmin();
+        showToast('Admin session expired. Please sign in again.', 'error');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data?.error || 'Failed to restore database backup', 'error');
+        return;
+      }
+      setRestoreFile(null);
+      await Promise.all([loadAllAdminData(), refreshStore()]);
+      const counts = data?.counts;
+      showToast(
+        counts
+          ? `Backup restored! Products: ${counts.products}, Orders: ${counts.orders}, Categories: ${counts.categories}`
+          : 'Database backup restored successfully!',
+        'success'
+      );
+    } catch {
+      showToast('Failed to upload and restore database backup', 'error');
+    } finally {
+      setRestoreBusy(false);
     }
   };
 
@@ -1897,33 +1964,119 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-zinc-900 border border-zinc-800 p-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-white">Complete Website A-to-Z Archive & Database Backup</h3>
-                  <p className="text-zinc-300 mt-0.5">
-                    Download the complete SHOPNEXA ROBI HUB website package (all code, media, products, orders, settings & SQLite database) or the standalone database file.
-                  </p>
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Complete Website A-to-Z Archive & Database Backup / Restore</h3>
+                    <p className="text-zinc-300 mt-0.5">
+                      Download the complete SHOPNEXA ROBI HUB website package, export your standalone SQLite database (.db), or restore a previously saved .db backup so all your settings, products & orders stay intact after redeploying.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      type="button"
+                      disabled={zipBusy}
+                      onClick={() => void handleDownloadFullZip()}
+                      className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>{zipBusy ? 'Preparing A–Z ZIP...' : 'Download Full Website ZIP (A–Z)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleDownloadBackup()}
+                      className="px-4 py-2 border border-zinc-700 text-zinc-100 hover:border-[#C9A227] hover:text-[#E4C76B] font-semibold flex items-center gap-2 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download Database (.db)</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={restoreBusy}
+                      onClick={() => restoreInputRef.current?.click()}
+                      className="px-4 py-2 border border-emerald-600/70 text-emerald-300 hover:bg-emerald-600 hover:text-black font-semibold flex items-center gap-2 transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <span>Restore Database (.db)</span>
+                    </button>
+                    <input
+                      ref={restoreInputRef}
+                      type="file"
+                      accept=".db,.sqlite,.sqlite3,application/octet-stream"
+                      onChange={handleSelectRestoreFile}
+                      className="hidden"
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2.5">
-                  <button
-                    type="button"
-                    disabled={zipBusy}
-                    onClick={() => void handleDownloadFullZip()}
-                    className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>{zipBusy ? 'Preparing A–Z ZIP...' : 'Download Full Website ZIP (A–Z)'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDownloadBackup()}
-                    className="px-4 py-2 border border-zinc-700 text-zinc-100 hover:border-[#C9A227] hover:text-[#E4C76B] font-semibold flex items-center gap-2 transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download Database (.db)</span>
-                  </button>
-                </div>
+
+                {restoreFile && (
+                  <div className="border border-[#C9A227]/60 bg-black/80 p-4 flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1 text-xs">
+                      <p className="font-semibold text-[#E4C76B]">
+                        Ready to restore: <span className="text-white font-mono">{restoreFile.name}</span> ({(restoreFile.size / 1024).toFixed(1)} KB)
+                      </p>
+                      <p className="text-zinc-400">
+                        All website settings, products, categories, coupons, orders & customer records will be restored from this backup file.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        disabled={restoreBusy}
+                        onClick={() => void handleConfirmRestoreBackup()}
+                        className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold transition-colors"
+                      >
+                        {restoreBusy ? 'Restoring...' : 'Confirm & Restore Now'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={restoreBusy}
+                        onClick={() => setRestoreFile(null)}
+                        className="px-3 py-2 border border-zinc-700 hover:border-white text-zinc-300 text-xs font-semibold transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {blockedGmails.length > 0 && (
+                <div className="bg-zinc-900 border border-red-900/60 p-6 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-red-300">Blocked Unauthorized Gmails (Admin Security Trap)</h3>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Anyone who entered a wrong Gmail during Step 2 admin verification was automatically blocked here.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    {blockedGmails.map((b: any) => (
+                      <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2 text-xs">
+                        <div>
+                          <p className="font-mono text-red-300 font-semibold">{b.email}</p>
+                          <p className="text-[11px] text-zinc-400">
+                            Blocked at: {b.blocked_at} {b.ip_address ? `• IP: ${b.ip_address}` : ''}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await fetch(`/api/admin/blocked-gmails/${b.id}`, {
+                              method: 'DELETE',
+                              headers: { Authorization: `Bearer ${adminToken}` },
+                            });
+                            showToast(`Unblocked ${b.email}`, 'success');
+                            await loadAllAdminData();
+                          }}
+                          className="px-3 py-1.5 border border-zinc-700 hover:border-[#C9A227] text-zinc-200 hover:text-[#E4C76B] text-[11px] font-semibold transition-colors"
+                        >
+                          Unblock
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {errorLogs.length > 0 && (
                 <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-2">

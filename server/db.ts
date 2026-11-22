@@ -386,6 +386,15 @@ export function initDatabase(): void {
       message TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS blocked_gmails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL UNIQUE,
+      ip_address TEXT DEFAULT '',
+      attempted_username TEXT DEFAULT '',
+      reason TEXT DEFAULT 'Unauthorized admin login verification attempt',
+      blocked_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   const cols = db.prepare(`PRAGMA table_info(admin_config)`).all() as Array<{ name: string }>;
@@ -395,19 +404,22 @@ export function initDatabase(): void {
   if (!cols.some((c) => c.name === 'admin_email_hash')) {
     db.exec(`ALTER TABLE admin_config ADD COLUMN admin_email_hash TEXT NOT NULL DEFAULT ''`);
   }
+  if (!cols.some((c) => c.name === 'gmail_v2_migrated')) {
+    db.exec(`ALTER TABLE admin_config ADD COLUMN gmail_v2_migrated INTEGER NOT NULL DEFAULT 0`);
+  }
 
   const DEFAULT_ADMIN_HASH =
     'abdd686bd9bd81ff005ee6e648e84a40:c8706d9e1beeb99da442a608c2e42782cf933e1cad107840511367b8de50749921cdb92bfe9b958a119eef0ddae94eee907cf69d823663950ead673d4bb6fba9';
   const DEFAULT_ADMIN_EMAIL_HASH =
-    'e9b582cd55ac636cb54e352284f29c08:36a25bf1412ecbd409047179299bffb5abb2a85fe6bb1cb043b282ea0042bcd0756de3bb00bdf8fd3b44662ba00f3b6b5d499a610f418dfc0574274a0848dd5b';
+    '03b2511542c980b0f7d334ce8eca5c18:245dd8bd4de76d405577be774a6d61b96650ea37d3da515e7419783e7dd4a2484204272c40c83e94839b1566ecd99f8bce85661ef7720907d08ad869b45f4f81';
   db.prepare(
-    `INSERT OR IGNORE INTO admin_config (id, admin_username, admin_password_hash, admin_email_hash, setup_completed) VALUES (1, 'Robiul', ?, ?, 1)`
+    `INSERT OR IGNORE INTO admin_config (id, admin_username, admin_password_hash, admin_email_hash, setup_completed, gmail_v2_migrated) VALUES (1, 'Robiul', ?, ?, 1, 1)`
   ).run(DEFAULT_ADMIN_HASH, DEFAULT_ADMIN_EMAIL_HASH);
   db.prepare(
-    `UPDATE admin_config SET admin_username = 'Robiul', admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1 WHERE id = 1 AND setup_completed = 0`
+    `UPDATE admin_config SET admin_username = 'Robiul', admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1, gmail_v2_migrated = 1 WHERE id = 1 AND setup_completed = 0`
   ).run(DEFAULT_ADMIN_HASH, DEFAULT_ADMIN_EMAIL_HASH);
   db.prepare(
-    `UPDATE admin_config SET admin_email_hash = ? WHERE id = 1 AND (admin_email_hash IS NULL OR admin_email_hash = '')`
+    `UPDATE admin_config SET admin_email_hash = ?, gmail_v2_migrated = 1 WHERE id = 1 AND (admin_email_hash IS NULL OR admin_email_hash = '' OR gmail_v2_migrated = 0)`
   ).run(DEFAULT_ADMIN_EMAIL_HASH);
 
   seedInitialData();
@@ -1692,3 +1704,168 @@ function seedCatalogProducts(): void {
     recalculateProductMetrics(productId);
   }
 }
+
+const RESTORABLE_TABLES = [
+  'users',
+  'admin_config',
+  'categories',
+  'products',
+  'product_colors',
+  'product_sizes',
+  'product_variations',
+  'addresses',
+  'cart_items',
+  'wishlist_items',
+  'couriers',
+  'shipping_zones',
+  'orders',
+  'order_items',
+  'affiliate_clicks',
+  'coupons',
+  'reviews',
+  'payment_settings',
+  'payment_records',
+  'notifications',
+  'site_settings',
+  'newsletter_subscribers',
+  'error_logs',
+  'blocked_gmails',
+] as const;
+
+const REQUIRED_BACKUP_TABLES = ['site_settings', 'categories', 'products', 'users'] as const;
+
+export interface DatabaseRestoreResult {
+  restoredTables: string[];
+  counts: {
+    products: number;
+    categories: number;
+    orders: number;
+    users: number;
+  };
+}
+
+export function restoreDatabaseFromFile(backupFilePath: string): DatabaseRestoreResult {
+  const resolvedPath = path.resolve(backupFilePath);
+  const safeBaseDir = path.resolve(DATA_DIR) + path.sep;
+  if (!resolvedPath.startsWith(safeBaseDir)) {
+    throw new Error('Invalid backup file location');
+  }
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error('Backup file not found');
+  }
+
+  const stat = fs.statSync(resolvedPath);
+  if (stat.size < 100) {
+    throw new Error('Uploaded file is too small to be a valid SQLite database');
+  }
+
+  const headerBuf = Buffer.alloc(16);
+  const fd = fs.openSync(resolvedPath, 'r');
+  try {
+    fs.readSync(fd, headerBuf, 0, 16, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  if (headerBuf.toString('utf8') !== 'SQLite format 3\0') {
+    throw new Error('Invalid database file: please upload a valid SHOPNEXA .db backup file');
+  }
+
+  const srcTables = new Set<string>();
+  const srcDb = new Database(resolvedPath, { readonly: true });
+  try {
+    const integrity = srcDb.pragma('integrity_check') as Array<{ integrity_check?: string }>;
+    if (!integrity.length || integrity[0]?.integrity_check !== 'ok') {
+      throw new Error('Backup database integrity check failed');
+    }
+
+    const tableRows = srcDb
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`)
+      .all() as Array<{ name: string }>;
+    for (const row of tableRows) {
+      srcTables.add(row.name);
+    }
+
+    for (const required of REQUIRED_BACKUP_TABLES) {
+      if (!srcTables.has(required)) {
+        throw new Error(`Backup file is missing required table: ${required}`);
+      }
+    }
+  } finally {
+    srcDb.close();
+  }
+
+  const restoredTables: string[] = [];
+  let attached = false;
+
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch {
+    // ignore if checkpoint is unavailable
+  }
+
+  db.pragma('foreign_keys = OFF');
+  try {
+    db.prepare(`ATTACH DATABASE ? AS restore_src`).run(resolvedPath);
+    attached = true;
+
+    const runRestore = db.transaction(() => {
+      for (const table of RESTORABLE_TABLES) {
+        if (!srcTables.has(table)) continue;
+
+        const mainColsRaw = db.pragma(`main.table_info("${table}")`) as Array<{ name: string }>;
+        const srcColsRaw = db.pragma(`restore_src.table_info("${table}")`) as Array<{ name: string }>;
+        const srcColSet = new Set(srcColsRaw.map((c) => c.name));
+        const commonCols = mainColsRaw
+          .map((c) => c.name)
+          .filter((name) => srcColSet.has(name) && /^[a-zA-Z0-9_]+$/.test(name));
+
+        if (commonCols.length === 0) continue;
+
+        const quotedCols = commonCols.map((c) => `"${c}"`).join(', ');
+        db.exec(`DELETE FROM main."${table}";`);
+        db.exec(`INSERT INTO main."${table}" (${quotedCols}) SELECT ${quotedCols} FROM restore_src."${table}";`);
+        restoredTables.push(table);
+      }
+
+      const mainHasSeq = Boolean(
+        db.prepare(`SELECT 1 FROM main.sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'`).get()
+      );
+      const srcHasSeq = Boolean(
+        db.prepare(`SELECT 1 FROM restore_src.sqlite_master WHERE type = 'table' AND name = 'sqlite_sequence'`).get()
+      );
+      if (mainHasSeq && srcHasSeq) {
+        db.exec(`DELETE FROM main.sqlite_sequence;`);
+        db.exec(`INSERT INTO main.sqlite_sequence (name, seq) SELECT name, seq FROM restore_src.sqlite_sequence;`);
+      }
+    });
+
+    runRestore();
+  } finally {
+    if (attached) {
+      try {
+        db.exec(`DETACH DATABASE restore_src;`);
+      } catch {
+        // ignore detach cleanup error
+      }
+    }
+    db.pragma('foreign_keys = ON');
+  }
+
+  initDatabase();
+
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch {
+    // ignore checkpoint error
+  }
+
+  const counts = {
+    products: (db.prepare(`SELECT COUNT(*) AS cnt FROM products`).get() as { cnt: number }).cnt,
+    categories: (db.prepare(`SELECT COUNT(*) AS cnt FROM categories`).get() as { cnt: number }).cnt,
+    orders: (db.prepare(`SELECT COUNT(*) AS cnt FROM orders`).get() as { cnt: number }).cnt,
+    users: (db.prepare(`SELECT COUNT(*) AS cnt FROM users`).get() as { cnt: number }).cnt,
+  };
+
+  return { restoredTables, counts };
+}
+

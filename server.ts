@@ -18,6 +18,7 @@ import {
   recalculateProductMetrics,
   recalculateProductRating,
   hydrateOrder,
+  restoreDatabaseFromFile,
 } from './server/db.ts';
 import {
   attachOptionalAuth,
@@ -76,6 +77,29 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Unsupported media format'));
+    }
+  },
+});
+
+const TMP_RESTORE_DIR = path.resolve(path.dirname(DB_PATH), 'tmp-restore');
+if (!fs.existsSync(TMP_RESTORE_DIR)) {
+  fs.mkdirSync(TMP_RESTORE_DIR, { recursive: true });
+}
+
+const backupUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, TMP_RESTORE_DIR),
+    filename: (_req, _file, cb) => {
+      cb(null, `restore-${Date.now()}-${crypto.randomBytes(8).toString('hex')}.db`);
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    if (!ext || ext === '.db' || ext === '.sqlite' || ext === '.sqlite3') {
+      cb(null, true);
+    } else {
+      cb(new Error('Please select a valid .db SQLite backup file'));
     }
   },
 });
@@ -239,6 +263,12 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
     return;
   }
 
+  const blockedEmail = db.prepare(`SELECT id FROM blocked_gmails WHERE email = ?`).get(email);
+  if (blockedEmail) {
+    res.status(403).json({ error: 'This Gmail address has been blocked due to unauthorized admin access activity.' });
+    return;
+  }
+
   const existing = db.prepare(`SELECT id FROM users WHERE email = ?`).get(email);
   if (existing) {
     res.status(409).json({ error: 'An account with this email already exists.' });
@@ -271,13 +301,19 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
   const email = sanitizeString(req.body.email, 160).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
 
+  const blockedEmail = db.prepare(`SELECT id FROM blocked_gmails WHERE email = ?`).get(email);
+  if (blockedEmail) {
+    res.status(403).json({ error: 'This Gmail address has been blocked due to unauthorized admin access activity.' });
+    return;
+  }
+
   const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as any;
   if (!user || !verifyPassword(password, user.password_hash)) {
     res.status(401).json({ error: 'Invalid email or password.' });
     return;
   }
-  if (user.status === 'suspended') {
-    res.status(403).json({ error: 'This account is currently suspended. Contact SHOPNEXA ROBI HUB Support.' });
+  if (user.status === 'suspended' || user.status === 'blocked') {
+    res.status(403).json({ error: 'This account is currently blocked/suspended. Contact SHOPNEXA ROBI HUB Support.' });
     return;
   }
 
@@ -430,11 +466,27 @@ app.post('/api/admin/auth/setup', authLimiter, (req, res) => {
     return;
   }
   db.prepare(
-    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1, updated_at = datetime('now') WHERE id = 1`
+    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, setup_completed = 1, gmail_v2_migrated = 1, updated_at = datetime('now') WHERE id = 1`
   ).run(username, hashPassword(passcode), hashPassword(gmail));
   const token = signToken({ userId: 0, email: 'admin@shopnexa.global', role: 'admin' });
   res.json({ token, role: 'admin', username });
 });
+
+const burnedChallengeTokens = new Map<string, number>();
+
+function burnChallengeToken(token: string, expSeconds: number): void {
+  const nowMs = Date.now();
+  for (const [k, expMs] of burnedChallengeTokens.entries()) {
+    if (expMs <= nowMs) burnedChallengeTokens.delete(k);
+  }
+  const digest = crypto.createHash('sha256').update(token).digest('hex');
+  burnedChallengeTokens.set(digest, Math.max(nowMs + 300_000, expSeconds * 1000));
+}
+
+function isChallengeTokenBurned(token: string): boolean {
+  const digest = crypto.createHash('sha256').update(token).digest('hex');
+  return burnedChallengeTokens.has(digest);
+}
 
 app.post('/api/admin/auth/login', authLimiter, (req, res) => {
   const usernameInput = sanitizeString(req.body.username || '', 60);
@@ -468,7 +520,7 @@ app.post('/api/admin/auth/login', authLimiter, (req, res) => {
   }
 
   const challengeToken = signToken(
-    { userId: 0, email: 'admin-mfa-pending', role: 'admin_mfa_pending' },
+    { userId: 0, email: `admin-mfa:${crypto.randomBytes(8).toString('hex')}`, role: 'admin_mfa_pending' },
     300
   );
   res.json({ requiresGmailVerification: true, challengeToken });
@@ -479,17 +531,52 @@ app.post('/api/admin/auth/verify-gmail', authLimiter, (req, res) => {
   const gmailInput = sanitizeString(req.body.gmail, 160).toLowerCase();
 
   const payload = verifyToken(challengeToken);
-  if (!payload || payload.role !== 'admin_mfa_pending') {
-    res.status(401).json({ error: 'Verification session expired. Please sign in again.' });
+  if (!payload || payload.role !== 'admin_mfa_pending' || isChallengeTokenBurned(challengeToken)) {
+    res.status(401).json({ blocked: true, error: 'Verification session locked or expired. Please sign in again.' });
     return;
   }
+
+  // Every verification challenge is strictly single-use
+  burnChallengeToken(challengeToken, payload.exp);
 
   const row = db
     .prepare(`SELECT admin_username, admin_email_hash FROM admin_config WHERE id = 1`)
     .get() as { admin_username: string; admin_email_hash: string } | undefined;
 
+  const alreadyBlocked = gmailInput
+    ? db.prepare(`SELECT id FROM blocked_gmails WHERE email = ?`).get(gmailInput)
+    : undefined;
+  if (alreadyBlocked) {
+    res.status(403).json({
+      blocked: true,
+      error: 'Access Blocked: This Gmail address has been permanently blocked for unauthorized admin access.',
+    });
+    return;
+  }
+
   if (!row || !gmailInput || !verifyPassword(gmailInput, row.admin_email_hash)) {
-    res.status(401).json({ error: 'Gmail verification failed. Access denied.' });
+    const clientIp =
+      req.ip || req.headers['x-forwarded-for']?.toString().split(',')[0]?.trim() || '';
+    if (gmailInput && gmailInput.includes('@')) {
+      db.prepare(
+        `INSERT OR IGNORE INTO blocked_gmails (email, ip_address, attempted_username, reason) VALUES (?, ?, ?, ?)`
+      ).run(
+        gmailInput,
+        clientIp,
+        row?.admin_username || 'Robiul',
+        'Entered wrong Gmail during admin Step 2 verification'
+      );
+      db.prepare(`UPDATE users SET status = 'blocked' WHERE email = ? AND role != 'admin'`).run(gmailInput);
+    }
+    logServerError('/api/admin/auth/verify-gmail', `Blocked unauthorized Gmail attempt: ${gmailInput || '(empty)'}`);
+    void sendTelegramAlert(
+      'support',
+      `Security Alert: Unauthorized admin Gmail attempt blocked (${gmailInput || 'unknown'}, IP: ${clientIp || 'unknown'}).`
+    );
+    res.status(403).json({
+      blocked: true,
+      error: 'Unauthorized Gmail! This Gmail address has been blocked immediately.',
+    });
     return;
   }
 
@@ -536,7 +623,7 @@ app.put('/api/admin/auth/credentials', requireAdmin, (req, res) => {
   const finalEmailHash = newGmail ? hashPassword(newGmail) : row.admin_email_hash;
 
   db.prepare(
-    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, updated_at = datetime('now') WHERE id = 1`
+    `UPDATE admin_config SET admin_username = ?, admin_password_hash = ?, admin_email_hash = ?, gmail_v2_migrated = 1, updated_at = datetime('now') WHERE id = 1`
   ).run(finalUsername, finalPassHash, finalEmailHash);
 
   res.json({ success: true, username: finalUsername });
@@ -1965,7 +2052,52 @@ app.get('/api/admin/backup', (req, res) => {
     res.status(404).json({ error: 'Database file not found' });
     return;
   }
+  try {
+    db.pragma('wal_checkpoint(TRUNCATE)');
+  } catch {
+    // proceed even if WAL checkpoint is unsupported
+  }
+  res.setHeader('Cache-Control', 'no-store');
   res.download(DB_PATH, `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`);
+});
+
+app.post('/api/admin/restore-backup', requireAdmin, (req, res) => {
+  backupUpload.single('database')(req, res, (uploadErr: unknown) => {
+    if (uploadErr) {
+      const msg = uploadErr instanceof Error ? uploadErr.message : 'Invalid backup file upload';
+      res.status(400).json({ error: msg });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: 'Please select a .db backup file to restore' });
+      return;
+    }
+    const uploadedPath = path.resolve(req.file.path);
+    try {
+      if (!uploadedPath.startsWith(TMP_RESTORE_DIR + path.sep)) {
+        res.status(400).json({ error: 'Invalid upload file path' });
+        return;
+      }
+      const result = restoreDatabaseFromFile(uploadedPath);
+      res.json({
+        success: true,
+        restoredTables: result.restoredTables,
+        counts: result.counts,
+      });
+    } catch (err) {
+      logServerError('/api/admin/restore-backup', err);
+      const message = err instanceof Error ? err.message : 'Database restore failed';
+      res.status(400).json({ error: message });
+    } finally {
+      try {
+        if (fs.existsSync(uploadedPath)) {
+          fs.unlinkSync(uploadedPath);
+        }
+      } catch {
+        // ignore temp cleanup failure
+      }
+    }
+  });
 });
 
 app.get('/api/admin/export-zip', (req, res) => {
@@ -2061,6 +2193,22 @@ app.get('/api/admin/export-zip', (req, res) => {
 
 app.get('/api/admin/error-logs', requireAdmin, (_req, res) => {
   res.json(db.prepare(`SELECT * FROM error_logs ORDER BY id DESC LIMIT 100`).all());
+});
+
+app.get('/api/admin/blocked-gmails', requireAdmin, (_req, res) => {
+  res.json(db.prepare(`SELECT * FROM blocked_gmails ORDER BY id DESC LIMIT 100`).all());
+});
+
+app.delete('/api/admin/blocked-gmails/:id', requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare(`SELECT email FROM blocked_gmails WHERE id = ?`).get(id) as
+    | { email: string }
+    | undefined;
+  if (existing) {
+    db.prepare(`DELETE FROM blocked_gmails WHERE id = ?`).run(id);
+    db.prepare(`UPDATE users SET status = 'active' WHERE email = ? AND status = 'blocked'`).run(existing.email);
+  }
+  res.json({ deleted: true });
 });
 
 app.get(['/health', '/api/health'], (_req, res) => {
