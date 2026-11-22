@@ -2025,6 +2025,10 @@ app.get('/api/admin/error-logs', requireAdmin, (_req, res) => {
   res.json(db.prepare(`SELECT * FROM error_logs ORDER BY id DESC LIMIT 100`).all());
 });
 
+app.get(['/health', '/api/health'], (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'SHOPNEXA ROBI HUB' });
+});
+
 app.get('/robots.txt', (req, res) => {
   const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
   const host = req.get('host') || 'shopnexa-2.onrender.com';
