@@ -1924,7 +1924,43 @@ app.post('/api/admin/telegram/test', requireAdmin, async (_req, res) => {
   res.json({ sent });
 });
 
-app.get('/api/admin/backup', requireAdmin, (_req, res) => {
+const downloadTickets = new Map<string, { type: 'zip' | 'backup'; expiresAt: number }>();
+
+function authorizeAdminOrDownloadTicket(
+  req: AuthenticatedRequest,
+  res: express.Response,
+  expectedType: 'zip' | 'backup'
+): boolean {
+  const ticket = typeof req.query.ticket === 'string' ? req.query.ticket.trim() : '';
+  if (ticket) {
+    const entry = downloadTickets.get(ticket);
+    downloadTickets.delete(ticket);
+    if (entry && entry.type === expectedType && entry.expiresAt > Date.now()) {
+      return true;
+    }
+    res.status(403).json({ error: 'Invalid or expired download ticket. Please retry from Dashboard.' });
+    return false;
+  }
+  if (!req.auth || req.auth.role !== 'admin') {
+    res.status(403).json({ error: 'Administrator access required' });
+    return false;
+  }
+  return true;
+}
+
+app.post('/api/admin/download-ticket', requireAdmin, (req, res) => {
+  const now = Date.now();
+  for (const [k, v] of downloadTickets.entries()) {
+    if (v.expiresAt <= now) downloadTickets.delete(k);
+  }
+  const type = req.body?.type === 'backup' ? 'backup' : 'zip';
+  const ticket = crypto.randomBytes(24).toString('hex');
+  downloadTickets.set(ticket, { type, expiresAt: now + 60_000 });
+  res.json({ ticket });
+});
+
+app.get('/api/admin/backup', (req, res) => {
+  if (!authorizeAdminOrDownloadTicket(req as AuthenticatedRequest, res, 'backup')) return;
   if (!fs.existsSync(DB_PATH)) {
     res.status(404).json({ error: 'Database file not found' });
     return;
@@ -1932,7 +1968,8 @@ app.get('/api/admin/backup', requireAdmin, (_req, res) => {
   res.download(DB_PATH, `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`);
 });
 
-app.get('/api/admin/export-zip', requireAdmin, (req, res) => {
+app.get('/api/admin/export-zip', (req, res) => {
+  if (!authorizeAdminOrDownloadTicket(req as AuthenticatedRequest, res, 'zip')) return;
   const dateStamp = new Date().toISOString().slice(0, 10);
   const zipFilename = `shopnexa-complete-a-to-z-backup-${dateStamp}.zip`;
 
@@ -1944,6 +1981,7 @@ app.get('/api/admin/export-zip', requireAdmin, (req, res) => {
 
   res.setHeader('Content-Type', 'application/zip');
   res.setHeader('Content-Disposition', `attachment; filename="${zipFilename}"`);
+  res.setHeader('Cache-Control', 'no-store');
 
   const archive = new ZipArchive({ zlib: { level: 6 } });
 
@@ -1956,8 +1994,8 @@ app.get('/api/admin/export-zip', requireAdmin, (req, res) => {
     }
   });
 
-  req.on('close', () => {
-    if (!res.writableEnded) {
+  res.on('close', () => {
+    if (!res.writableFinished) {
       archive.abort();
     }
   });

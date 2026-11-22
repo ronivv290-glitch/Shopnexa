@@ -378,6 +378,19 @@ export function AdminDashboard() {
     return true;
   });
 
+  const triggerNativeUrlDownload = (downloadUrl: string, filename: string) => {
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      a.remove();
+    }, 5000);
+  };
+
   const exportOrdersCsv = () => {
     const header = ['OrderID', 'Customer', 'Phone', 'Country', 'Payment', 'PayStatus', 'Status', 'Total', 'Date'];
     const rows = filteredOrders.map((o) => [
@@ -397,45 +410,71 @@ export function AdminDashboard() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `shopnexa-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 15000);
   };
 
   const handleDownloadBackup = async () => {
-    const res = await fetch('/api/admin/backup', {
-      headers: { Authorization: `Bearer ${adminToken}` },
-    });
-    if (!res.ok) {
+    try {
+      const ticketRes = await fetch('/api/admin/download-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ type: 'backup' }),
+      });
+      if (ticketRes.status === 401 || ticketRes.status === 403) {
+        logoutAdmin();
+        showToast('Admin session expired. Please sign in again.', 'error');
+        return;
+      }
+      if (ticketRes.ok) {
+        const { ticket } = (await ticketRes.json()) as { ticket?: string };
+        if (ticket) {
+          triggerNativeUrlDownload(
+            `/api/admin/backup?ticket=${encodeURIComponent(ticket)}`,
+            `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`
+          );
+          showToast('Database backup download started', 'success');
+          return;
+        }
+      }
       showToast('Backup download failed', 'error');
-      return;
+    } catch {
+      showToast('Backup download failed', 'error');
     }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const handleDownloadFullZip = async () => {
     setZipBusy(true);
     try {
-      const res = await fetch('/api/admin/export-zip', {
-        headers: { Authorization: `Bearer ${adminToken}` },
+      const ticketRes = await fetch('/api/admin/download-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+        body: JSON.stringify({ type: 'zip' }),
       });
-      if (!res.ok) {
-        showToast('Full website ZIP export failed', 'error');
+      if (ticketRes.status === 401 || ticketRes.status === 403) {
+        logoutAdmin();
+        showToast('Admin session expired. Please sign in again.', 'error');
         return;
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `shopnexa-complete-a-to-z-backup-${new Date().toISOString().slice(0, 10)}.zip`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Complete A-to-Z Website ZIP downloaded', 'success');
+      if (ticketRes.ok) {
+        const { ticket } = (await ticketRes.json()) as { ticket?: string };
+        if (ticket) {
+          triggerNativeUrlDownload(
+            `/api/admin/export-zip?ticket=${encodeURIComponent(ticket)}`,
+            `shopnexa-complete-a-to-z-backup-${new Date().toISOString().slice(0, 10)}.zip`
+          );
+          showToast('Complete A-to-Z Website ZIP download started', 'success');
+          return;
+        }
+      }
+      showToast('Full website ZIP export failed', 'error');
+    } catch {
+      showToast('Full website ZIP export failed', 'error');
     } finally {
       setZipBusy(false);
     }

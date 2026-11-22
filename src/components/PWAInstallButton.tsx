@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share, MoreVertical, Smartphone, Monitor, CheckCircle2, PlusSquare } from 'lucide-react';
+import { Download, X, Share, MoreVertical, Smartphone, Monitor, CheckCircle2, PlusSquare, Copy } from 'lucide-react';
 import { usePWAInstall, type InstallPlatform } from '../hooks/usePWAInstall.ts';
 import { useStore } from '../context/StoreContext.tsx';
 
@@ -20,10 +20,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   alwaysVisible = false,
   className = '',
 }) => {
-  const { settings } = useStore();
+  const { settings, showToast } = useStore();
   const { isInstallable, isInstalled, platform, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
   const [activeTab, setActiveTab] = useState<InstallPlatform>(defaultTab || platform);
+  const [copiedUrl, setCopiedUrl] = useState(false);
 
   useEffect(() => {
     setActiveTab(defaultTab || platform);
@@ -216,27 +217,51 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               </ol>
             )}
 
-            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
-              {isInstallable && !isInstalled && (
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-zinc-800">
+              {!isInstallable && !isInstalled ? (
                 <button
                   type="button"
                   onClick={async () => {
-                    const ok = await install();
-                    if (ok) setShowGuide(false);
+                    try {
+                      await navigator.clipboard.writeText(window.location.origin);
+                      setCopiedUrl(true);
+                      showToast('Link copied! Open in Chrome to install the app.', 'success');
+                      setTimeout(() => setCopiedUrl(false), 3000);
+                    } catch {
+                      showToast('Open this website directly in Google Chrome to install.', 'info');
+                    }
                   }}
-                  className="px-5 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold flex items-center gap-2 transition-colors"
+                  className="px-4 py-2.5 border border-[#C9A227]/60 text-[#E4C76B] hover:bg-[#C9A227] hover:text-black text-xs font-semibold flex items-center gap-2 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Install Now (One-Tap)</span>
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>{copiedUrl ? 'Link Copied!' : 'Copy Link (Open in Chrome)'}</span>
                 </button>
+              ) : (
+                <span />
               )}
-              <button
-                type="button"
-                onClick={() => setShowGuide(false)}
-                className="px-4 py-2.5 border border-zinc-700 hover:border-white text-xs font-semibold text-zinc-200 transition-colors"
-              >
-                Close
-              </button>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                {isInstallable && !isInstalled && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ok = await install();
+                      if (ok) setShowGuide(false);
+                    }}
+                    className="px-5 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Install Now (One-Tap)</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(false)}
+                  className="px-4 py-2.5 border border-zinc-700 hover:border-white text-xs font-semibold text-zinc-200 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
