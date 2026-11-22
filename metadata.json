@@ -1,0 +1,6 @@
+{
+  "name": "SHOPNEXA",
+  "description": "SHOPNEXA — The Future of Shopping. A global luxury hybrid e-commerce and affiliate marketplace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

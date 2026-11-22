@@ -1,0 +1,1572 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  LayoutDashboard,
+  Package,
+  Link2,
+  ShoppingCart,
+  Users,
+  Truck,
+  CreditCard,
+  Tag,
+  MessageSquare,
+  Settings,
+  Download,
+  LogOut,
+  Plus,
+  Trash2,
+  Edit3,
+  Printer,
+  Send,
+  Shield,
+} from 'lucide-react';
+import { useStore } from '../context/StoreContext.tsx';
+import type {
+  Product,
+  Order,
+  Coupon,
+  Review,
+  ShippingZone,
+  CourierService,
+  PaymentSetting,
+  SiteSettings,
+} from '../types.ts';
+import { AdminProductEditor } from './AdminProductEditor.tsx';
+
+type AdminTab =
+  | 'overview'
+  | 'products'
+  | 'categories'
+  | 'affiliates'
+  | 'orders'
+  | 'customers'
+  | 'shipping'
+  | 'payments'
+  | 'coupons'
+  | 'reviews'
+  | 'social'
+  | 'settings';
+
+export function AdminDashboard() {
+  const {
+    adminToken,
+    setAdminSession,
+    logoutAdmin,
+    categories,
+    settings,
+    formatPrice,
+    refreshStore,
+    showToast,
+  } = useStore();
+
+  const [authStatus, setAuthStatus] = useState<{
+    envConfigured: boolean;
+    needsInitialSetup: boolean;
+    adminUsernameHint?: string;
+  } | null>(null);
+  const [adminUsername, setAdminUsername] = useState('');
+  const [passcode, setPasscode] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [credForm, setCredForm] = useState({ currentPasscode: '', newUsername: '', newPasscode: '' });
+  const [credBusy, setCredBusy] = useState(false);
+
+  const [tab, setTab] = useState<AdminTab>('overview');
+  const [daysFilter, setDaysFilter] = useState(30);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [adminProducts, setAdminProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [affiliateReports, setAffiliateReports] = useState<{ clicks: any[]; byProduct: any[] }>({
+    clicks: [],
+    byProduct: [],
+  });
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [shippingData, setShippingData] = useState<{ zones: ShippingZone[]; couriers: CourierService[] }>({
+    zones: [],
+    couriers: [],
+  });
+  const [paymentData, setPaymentData] = useState<{ settings: PaymentSetting[]; records: any[] }>({
+    settings: [],
+    records: [],
+  });
+  const [errorLogs, setErrorLogs] = useState<any[]>([]);
+
+  const [editingProduct, setEditingProduct] = useState<{ open: boolean; product: Product | null; defaultType: 'own' | 'affiliate' }>({
+    open: false,
+    product: null,
+    defaultType: 'own',
+  });
+
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('All');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCoupon, setNewCoupon] = useState({
+    code: '',
+    discount_type: 'percentage',
+    discount_value: 10,
+    min_order_value: 0,
+    max_uses: 100,
+    expires_at: '',
+    campaign_name: '',
+  });
+  const [newZone, setNewZone] = useState({
+    name: '',
+    country: 'Bangladesh',
+    district: '',
+    area: '',
+    base_fee: 2,
+    free_shipping_threshold: 100,
+    estimated_days: '2–4 Business Days',
+  });
+  const [newCourier, setNewCourier] = useState({
+    name: '',
+    contact_phone: '',
+    tracking_url_template: '',
+    supported_regions: 'Bangladesh',
+    base_rate: 2,
+  });
+  const [siteForm, setSiteForm] = useState<SiteSettings | null>(settings);
+
+  useEffect(() => {
+    setSiteForm(settings);
+  }, [settings]);
+
+  useEffect(() => {
+    fetch('/api/admin/auth/status')
+      .then((r) => r.json())
+      .then(setAuthStatus)
+      .catch(() => {});
+  }, []);
+
+  const loadAllAdminData = useCallback(async () => {
+    if (!adminToken) return;
+    const headers = { Authorization: `Bearer ${adminToken}` };
+    const [an, pr, or, cu, af, cp, rv, sh, py, lg] = await Promise.all([
+      fetch(`/api/admin/analytics?days=${daysFilter}`, { headers }).then((r) => (r.ok ? r.json() : null)),
+      fetch('/api/admin/products', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/orders', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/customers', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/affiliate-reports', { headers }).then((r) => (r.ok ? r.json() : { clicks: [], byProduct: [] })),
+      fetch('/api/admin/coupons', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/reviews', { headers }).then((r) => (r.ok ? r.json() : [])),
+      fetch('/api/admin/shipping', { headers }).then((r) => (r.ok ? r.json() : { zones: [], couriers: [] })),
+      fetch('/api/admin/payments', { headers }).then((r) => (r.ok ? r.json() : { settings: [], records: [] })),
+      fetch('/api/admin/error-logs', { headers }).then((r) => (r.ok ? r.json() : [])),
+    ]);
+    if (an) setAnalytics(an);
+    setAdminProducts(pr);
+    setOrders(or);
+    setCustomers(cu);
+    setAffiliateReports(af);
+    setCoupons(cp);
+    setReviews(rv);
+    setShippingData(sh);
+    setPaymentData(py);
+    setErrorLogs(lg);
+  }, [adminToken, daysFilter]);
+
+  useEffect(() => {
+    void loadAllAdminData();
+  }, [loadAllAdminData]);
+
+  const handleAdminAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthBusy(true);
+    try {
+      const endpoint = authStatus?.needsInitialSetup ? '/api/admin/auth/setup' : '/api/admin/auth/login';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: adminUsername.trim(), passcode }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.error || 'Authentication failed', 'error');
+        return;
+      }
+      setAdminSession(data.token);
+      setPasscode('');
+      showToast('Admin session authenticated', 'success');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  if (!adminToken) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16">
+        <div className="border border-zinc-300 bg-zinc-950 text-white p-8 space-y-6">
+          <div className="flex items-center gap-3 text-[#E4C76B]">
+            <Shield className="w-6 h-6" />
+            <div>
+              <p className="text-xs font-semibold tracking-[0.2em]">SHOPNEXA CONSOLE</p>
+              <h1 className="font-display text-3xl font-semibold text-white">
+                {authStatus?.needsInitialSetup ? 'Claim Administrator Access' : 'Administrator Sign In'}
+              </h1>
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            {authStatus?.needsInitialSetup
+              ? 'First-run security setup: configure your Administrator username and password (min 6 characters).'
+              : 'Enter your Administrator username and password to access inventory, orders, payments, affiliate reports, and social links.'}
+          </p>
+
+          <form onSubmit={handleAdminAuth} className="space-y-4 text-xs">
+            <div>
+              <label className="block text-zinc-300 font-medium mb-1">Admin Username</label>
+              <input
+                type="text"
+                required
+                value={adminUsername}
+                onChange={(e) => setAdminUsername(e.target.value)}
+                placeholder="Enter admin username"
+                className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-zinc-300 font-medium mb-1">Admin Password</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                placeholder={authStatus?.needsInitialSetup ? 'Create admin password' : 'Enter admin password'}
+                className="w-full bg-zinc-900 border border-zinc-700 px-4 py-3 text-white focus:border-[#C9A227] focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={authBusy}
+              className="w-full py-3 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
+            >
+              {authBusy ? 'Verifying...' : authStatus?.needsInitialSetup ? 'Save & Enter Dashboard' : 'Enter Admin Dashboard'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredOrders = orders.filter((o) => {
+    if (orderStatusFilter !== 'All' && o.order_status !== orderStatusFilter) return false;
+    if (orderSearch.trim()) {
+      const q = orderSearch.toLowerCase();
+      return `${o.order_number} ${o.customer_name} ${o.customer_phone} ${o.customer_email}`.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const exportOrdersCsv = () => {
+    const header = ['OrderID', 'Customer', 'Phone', 'Country', 'Payment', 'PayStatus', 'Status', 'Total', 'Date'];
+    const rows = filteredOrders.map((o) => [
+      o.order_number,
+      `"${o.customer_name}"`,
+      `"${o.customer_phone}"`,
+      o.country,
+      o.payment_method,
+      o.payment_status,
+      o.order_status,
+      o.final_total,
+      o.created_at,
+    ]);
+    const csv = [header.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shopnexa-orders-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadBackup = async () => {
+    const res = await fetch('/api/admin/backup', {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    });
+    if (!res.ok) {
+      showToast('Backup download failed', 'error');
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shopnexa-backup-${new Date().toISOString().slice(0, 10)}.db`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const navItems: Array<{ id: AdminTab; label: string; icon: any }> = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'products', label: 'Products (Own & Affiliate)', icon: Package },
+    { id: 'categories', label: 'Categories', icon: Tag },
+    { id: 'affiliates', label: 'Affiliate Reports', icon: Link2 },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'shipping', label: 'Shipping & Couriers', icon: Truck },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'coupons', label: 'Coupons', icon: Tag },
+    { id: 'reviews', label: 'Reviews & Q&A', icon: MessageSquare },
+    { id: 'social', label: 'Social Media & Telegram', icon: Send },
+    { id: 'settings', label: 'Website, Credentials & Backup', icon: Settings },
+  ];
+
+  const maxChartRev = Math.max(1, ...(analytics?.salesSeries || []).map((s: any) => s.revenue));
+
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-950">
+      <div className="bg-zinc-950 text-white border-b border-[#C9A227]/30 px-4 sm:px-8 py-4 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-[#E4C76B]">SHOPNEXA CONTROL CENTER</p>
+          <h1 className="font-display text-2xl font-semibold">Administrator Dashboard</h1>
+        </div>
+        <button
+          type="button"
+          onClick={logoutAdmin}
+          className="px-4 py-2 border border-zinc-700 hover:border-[#C9A227] text-xs font-semibold flex items-center gap-2"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out Admin</span>
+        </button>
+      </div>
+
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <aside className="lg:col-span-3 space-y-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={`w-full px-4 py-2.5 text-left text-xs font-semibold flex items-center gap-2.5 border transition-colors ${
+                  tab === item.id
+                    ? 'bg-zinc-950 text-white border-zinc-950'
+                    : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900'
+                }`}
+              >
+                <Icon className="w-4 h-4 text-[#C9A227]" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </aside>
+
+        <main className="lg:col-span-9 space-y-6">
+          {/* 1. OVERVIEW */}
+          {tab === 'overview' && analytics && (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <h2 className="font-display text-2xl font-semibold">Marketplace Overview</h2>
+                <select
+                  value={daysFilter}
+                  onChange={(e) => setDaysFilter(Number(e.target.value))}
+                  className="border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold"
+                >
+                  <option value={7}>Last 7 Days</option>
+                  <option value={30}>Last 30 Days</option>
+                  <option value={90}>Last 90 Days</option>
+                  <option value={365}>Last 365 Days</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
+                {[
+                  { label: 'Total Revenue', val: formatPrice(analytics.metrics.totalRevenue) },
+                  { label: 'Total Sales', val: analytics.metrics.totalSales },
+                  { label: 'Total Orders', val: analytics.metrics.totalOrders },
+                  { label: 'Pending Orders', val: analytics.metrics.pendingOrders },
+                  { label: 'Confirmed Orders', val: analytics.metrics.confirmedOrders },
+                  { label: 'Delivered Orders', val: analytics.metrics.deliveredOrders },
+                  { label: 'Cancelled Orders', val: analytics.metrics.cancelledOrders },
+                  { label: 'Total Customers', val: analytics.metrics.totalCustomers },
+                  { label: 'Total Products', val: analytics.metrics.totalProducts },
+                  { label: 'Own Products', val: analytics.metrics.ownProductCount },
+                  { label: 'Affiliate Products', val: analytics.metrics.affiliateProductCount },
+                  { label: 'Total Direct Stock', val: analytics.metrics.totalStock },
+                  { label: 'Low Stock Alerts', val: analytics.metrics.lowStockCount },
+                  { label: 'Affiliate Clicks', val: analytics.metrics.affiliateClicks },
+                ].map((m) => (
+                  <div key={m.label} className="bg-white border border-zinc-200 p-4">
+                    <p className="text-zinc-500">{m.label}</p>
+                    <p className="text-lg font-mono tabular-nums font-semibold text-zinc-950 mt-1">{m.val}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* SVG Sales & Clicks Chart */}
+              <div className="bg-white border border-zinc-200 p-6 space-y-4">
+                <h3 className="text-sm font-semibold">Sales Revenue & Activity Timeline</h3>
+                {analytics.salesSeries.length === 0 ? (
+                  <p className="text-xs text-zinc-500 py-8 text-center">
+                    No order or affiliate click activity recorded in this period yet.
+                  </p>
+                ) : (
+                  <div className="h-44 flex items-end gap-2 border-b border-l border-zinc-200 p-3 overflow-x-auto">
+                    {analytics.salesSeries.map((pt: any) => {
+                      const heightPct = Math.max(8, Math.round((pt.revenue / maxChartRev) * 100));
+                      return (
+                        <div key={pt.date} className="flex-1 min-w-[36px] flex flex-col items-center gap-1">
+                          <span className="text-[10px] font-mono text-zinc-500">{pt.orders}o/{pt.clicks}c</span>
+                          <div
+                            title={`${pt.date}: $${pt.revenue}`}
+                            className="w-full max-w-[32px] bg-zinc-950 hover:bg-[#C9A227] transition-colors"
+                            style={{ height: `${heightPct}%` }}
+                          />
+                          <span className="text-[10px] font-mono text-zinc-400">{pt.date.slice(5)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white border border-zinc-200 p-5 space-y-3 text-xs">
+                  <h3 className="text-sm font-semibold">Low Stock Direct Products</h3>
+                  {analytics.lowStockProducts.length === 0 ? (
+                    <p className="text-zinc-500">All direct products are adequately stocked.</p>
+                  ) : (
+                    analytics.lowStockProducts.map((p: Product) => (
+                      <div key={p.id} className="flex justify-between py-2 border-b border-zinc-100">
+                        <span className="font-medium">{p.name}</span>
+                        <span className="font-mono text-red-600 font-semibold">{p.total_stock} left</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="bg-white border border-zinc-200 p-5 space-y-3 text-xs">
+                  <h3 className="text-sm font-semibold">Recent Orders</h3>
+                  {analytics.recentOrders.length === 0 ? (
+                    <p className="text-zinc-500">No direct orders placed yet.</p>
+                  ) : (
+                    analytics.recentOrders.map((o: Order) => (
+                      <div key={o.id} className="flex justify-between py-2 border-b border-zinc-100">
+                        <div>
+                          <span className="font-mono font-semibold">{o.order_number}</span>
+                          <span className="text-zinc-500 ml-2">{o.customer_name}</span>
+                        </div>
+                        <span className="font-mono font-semibold">{formatPrice(o.final_total)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 2. PRODUCTS */}
+          {tab === 'products' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-2xl font-semibold">Products Management</h2>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'own' })}
+                    className="px-4 py-2 bg-zinc-950 text-white text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Own Product</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'affiliate' })}
+                    className="px-4 py-2 bg-[#C9A227] text-black text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Affiliate Product</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-zinc-950 text-white">
+                    <tr>
+                      <th className="px-3 py-2.5">Code / SKU</th>
+                      <th className="px-3 py-2.5">Name</th>
+                      <th className="px-3 py-2.5">Type</th>
+                      <th className="px-3 py-2.5">Price</th>
+                      <th className="px-3 py-2.5">Colors / Sizes / Vars</th>
+                      <th className="px-3 py-2.5">Stock</th>
+                      <th className="px-3 py-2.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {adminProducts.map((p) => (
+                      <tr key={p.id} className="hover:bg-zinc-50">
+                        <td className="px-3 py-2.5 font-mono">{p.product_code}</td>
+                        <td className="px-3 py-2.5 font-semibold">{p.name}</td>
+                        <td className="px-3 py-2.5 uppercase font-semibold">
+                          {p.product_type === 'affiliate' ? 'Affiliate' : 'Own Direct'}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">{formatPrice(p.sale_price || p.selling_price)}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">
+                          {p.total_colors}C / {p.total_sizes}S / {p.total_variations}V
+                        </td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">{p.total_stock}</td>
+                        <td className="px-3 py-2.5 text-right space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingProduct({ open: true, product: p, defaultType: p.product_type })}
+                            className="text-zinc-700 hover:text-black inline-flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const res = await fetch(`/api/admin/products/${p.id}`, {
+                                method: 'DELETE',
+                                headers: { Authorization: `Bearer ${adminToken}` },
+                              });
+                              if (res.ok) {
+                                await loadAllAdminData();
+                                await refreshStore();
+                              } else {
+                                const d = await res.json();
+                                showToast(d.error || 'Cannot delete', 'error');
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-800 inline-flex items-center"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3. CATEGORIES */}
+          {tab === 'categories' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
+              <h2 className="font-display text-2xl font-semibold">Categories Management ({categories.length})</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const res = await fetch('/api/admin/categories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify({ name: newCategoryName, is_featured: true }),
+                  });
+                  if (res.ok) {
+                    setNewCategoryName('');
+                    await refreshStore();
+                    showToast('Category added', 'success');
+                  }
+                }}
+                className="flex gap-2 max-w-md"
+              >
+                <input
+                  type="text"
+                  required
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="New category name"
+                  className="flex-1 border border-zinc-300 px-3 py-2"
+                />
+                <button type="submit" className="px-4 py-2 bg-zinc-950 text-white font-semibold">
+                  Add Category
+                </button>
+              </form>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {categories.map((cat) => (
+                  <div key={cat.id} className="border border-zinc-200 p-3 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-zinc-950">{cat.name}</p>
+                      <p className="text-zinc-500 font-mono">{cat.product_count ?? 0} products</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await fetch(`/api/admin/categories/${cat.id}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${adminToken}` },
+                        });
+                        if (res.ok) await refreshStore();
+                        else showToast('Remove products in this category first', 'error');
+                      }}
+                      className="text-zinc-400 hover:text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. AFFILIATES */}
+          {tab === 'affiliates' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-2xl font-semibold">AliExpress Affiliate Reports & Click Tracking</h2>
+                <button
+                  type="button"
+                  onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'affiliate' })}
+                  className="px-4 py-2 bg-[#C9A227] text-black font-semibold"
+                >
+                  + Add Affiliate Product
+                </button>
+              </div>
+
+              <div className="overflow-x-auto border border-zinc-200">
+                <table className="w-full text-left">
+                  <thead className="bg-zinc-950 text-white">
+                    <tr>
+                      <th className="px-3 py-2">Code</th>
+                      <th className="px-3 py-2">Product</th>
+                      <th className="px-3 py-2">Affiliate URL</th>
+                      <th className="px-3 py-2 text-right">Tracked Clicks</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {affiliateReports.byProduct.map((row: any) => (
+                      <tr key={row.id}>
+                        <td className="px-3 py-2 font-mono">{row.product_code}</td>
+                        <td className="px-3 py-2 font-semibold">{row.name}</td>
+                        <td className="px-3 py-2 font-mono truncate max-w-xs">{row.affiliate_url}</td>
+                        <td className="px-3 py-2 font-mono tabular-nums text-right font-semibold">{row.click_count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Recent Affiliate Click Log ({affiliateReports.clicks.length})</h3>
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {affiliateReports.clicks.map((c: any) => (
+                    <div key={c.id} className="border border-zinc-200 p-2.5 flex justify-between">
+                      <span>{c.product_name} ({[c.selected_color, c.selected_size].filter(Boolean).join(', ') || 'Default'})</span>
+                      <span className="font-mono text-zinc-500">{c.clicked_at}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 5. ORDERS */}
+          {tab === 'orders' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-2xl font-semibold">Orders Management ({filteredOrders.length})</h2>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="search"
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    placeholder="Search Order ID, customer..."
+                    className="border border-zinc-300 px-3 py-1.5"
+                  />
+                  <select
+                    value={orderStatusFilter}
+                    onChange={(e) => setOrderStatusFilter(e.target.value)}
+                    className="border border-zinc-300 px-3 py-1.5 bg-white"
+                  >
+                    <option value="All">All Statuses</option>
+                    {['Pending', 'Confirmed', 'Processing', 'Ready to Ship', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded'].map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={exportOrdersCsv}
+                    className="px-3 py-1.5 border border-zinc-900 font-semibold flex items-center gap-1"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-zinc-950 text-white">
+                    <tr>
+                      <th className="px-3 py-2">Order ID</th>
+                      <th className="px-3 py-2">Customer</th>
+                      <th className="px-3 py-2">Payment</th>
+                      <th className="px-3 py-2">Total</th>
+                      <th className="px-3 py-2">Order Status</th>
+                      <th className="px-3 py-2 text-right">Manage</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {filteredOrders.map((o) => (
+                      <tr key={o.id}>
+                        <td className="px-3 py-2.5 font-mono font-semibold">{o.order_number}</td>
+                        <td className="px-3 py-2.5">
+                          <p className="font-semibold">{o.customer_name}</p>
+                          <p className="text-zinc-500">{o.customer_phone} · {o.country}</p>
+                        </td>
+                        <td className="px-3 py-2.5 uppercase">
+                          {o.payment_method} ({o.payment_status})
+                        </td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums font-semibold">{formatPrice(o.final_total)}</td>
+                        <td className="px-3 py-2.5 font-semibold text-[#9C7A16]">{o.order_status}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(o)}
+                            className="px-3 py-1 bg-zinc-950 text-white font-semibold"
+                          >
+                            Inspect / Update
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedOrder && (
+                <div className="border-2 border-zinc-950 p-5 space-y-4 bg-zinc-50">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold font-mono">Manage Order {selectedOrder.order_number}</h3>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => window.print()} className="px-3 py-1 border border-zinc-400 flex items-center gap-1">
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print Invoice</span>
+                      </button>
+                      <button type="button" onClick={() => setSelectedOrder(null)} className="px-2 py-1 border">Close</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold">Delivery Address</p>
+                      <p className="text-zinc-600 mt-1">
+                        {[
+                          selectedOrder.address.house_number,
+                          selectedOrder.address.road_number,
+                          selectedOrder.address.area,
+                          selectedOrder.address.thana,
+                          selectedOrder.address.upazila,
+                          selectedOrder.address.district,
+                          selectedOrder.address.city,
+                          selectedOrder.address.country,
+                          selectedOrder.address.postal_code,
+                        ]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </p>
+                      {selectedOrder.transaction_id && (
+                        <p className="font-mono mt-1">Transaction ID: {selectedOrder.transaction_id}</p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block font-medium mb-1">Order Status</label>
+                        <select
+                          value={selectedOrder.order_status}
+                          onChange={(e) => setSelectedOrder({ ...selectedOrder, order_status: e.target.value as any })}
+                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                        >
+                          {['Pending', 'Confirmed', 'Processing', 'Ready to Ship', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded'].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-medium mb-1">Payment Status</label>
+                        <select
+                          value={selectedOrder.payment_status}
+                          onChange={(e) => setSelectedOrder({ ...selectedOrder, payment_status: e.target.value as any })}
+                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                        >
+                          {['pending', 'verified', 'paid', 'failed', 'refunded'].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-medium mb-1">Courier Service</label>
+                        <select
+                          value={selectedOrder.courier_id ?? ''}
+                          onChange={(e) =>
+                            setSelectedOrder({ ...selectedOrder, courier_id: e.target.value ? Number(e.target.value) : null })
+                          }
+                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                        >
+                          <option value="">Select Courier</option>
+                          {shippingData.couriers.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-medium mb-1">Tracking Number</label>
+                        <input
+                          type="text"
+                          value={selectedOrder.tracking_number}
+                          onChange={(e) => setSelectedOrder({ ...selectedOrder, tracking_number: e.target.value })}
+                          className="w-full border border-zinc-300 bg-white px-2 py-1.5 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await fetch(`/api/admin/orders/${selectedOrder.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                        body: JSON.stringify(selectedOrder),
+                      });
+                      if (res.ok) {
+                        showToast('Order updated', 'success');
+                        await loadAllAdminData();
+                      }
+                    }}
+                    className="px-5 py-2 bg-zinc-950 text-white font-semibold"
+                  >
+                    Save Order Update
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 6. CUSTOMERS */}
+          {tab === 'customers' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
+              <h2 className="font-display text-2xl font-semibold">Customers ({customers.length})</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-zinc-950 text-white">
+                    <tr>
+                      <th className="px-3 py-2">Customer</th>
+                      <th className="px-3 py-2">Contact</th>
+                      <th className="px-3 py-2">Orders / Spent</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200">
+                    {customers.map((c) => (
+                      <tr key={c.id}>
+                        <td className="px-3 py-2.5 font-semibold">{c.name}</td>
+                        <td className="px-3 py-2.5">{c.email} · {c.phone}</td>
+                        <td className="px-3 py-2.5 font-mono">{c.order_count} orders · {formatPrice(c.total_spent)}</td>
+                        <td className="px-3 py-2.5 uppercase font-semibold">{c.status}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const next = c.status === 'active' ? 'suspended' : 'active';
+                              await fetch(`/api/admin/customers/${c.id}/status`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                                body: JSON.stringify({ status: next }),
+                              });
+                              await loadAllAdminData();
+                            }}
+                            className="px-3 py-1 border border-zinc-300 hover:border-black"
+                          >
+                            {c.status === 'active' ? 'Suspend' : 'Activate'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 7. SHIPPING & COURIERS */}
+          {tab === 'shipping' && (
+            <div className="space-y-6 text-xs">
+              <div className="bg-white border border-zinc-200 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold">Shipping Zones</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {shippingData.zones.map((z) => (
+                    <div key={z.id} className="border border-zinc-200 p-3 space-y-1">
+                      <div className="flex justify-between font-semibold">
+                        <span>{z.name}</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await fetch(`/api/admin/shipping-zones/${z.id}`, {
+                              method: 'DELETE',
+                              headers: { Authorization: `Bearer ${adminToken}` },
+                            });
+                            await loadAllAdminData();
+                          }}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-zinc-600">{z.country} · {z.district} · {z.area}</p>
+                      <p className="font-mono">Fee: {formatPrice(z.base_fee)} · Free &gt; {formatPrice(z.free_shipping_threshold)}</p>
+                      <p className="text-zinc-500">{z.estimated_days}</p>
+                    </div>
+                  ))}
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    await fetch('/api/admin/shipping-zones', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                      body: JSON.stringify(newZone),
+                    });
+                    await loadAllAdminData();
+                    showToast('Shipping zone added', 'success');
+                  }}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-200"
+                >
+                  <input type="text" required placeholder="Zone Name" value={newZone.name} onChange={(e) => setNewZone({ ...newZone, name: e.target.value })} className="border px-2 py-1.5" />
+                  <input type="text" required placeholder="Country" value={newZone.country} onChange={(e) => setNewZone({ ...newZone, country: e.target.value })} className="border px-2 py-1.5" />
+                  <input type="text" placeholder="District" value={newZone.district} onChange={(e) => setNewZone({ ...newZone, district: e.target.value })} className="border px-2 py-1.5" />
+                  <input type="number" step="0.01" placeholder="Fee USD" value={newZone.base_fee} onChange={(e) => setNewZone({ ...newZone, base_fee: Number(e.target.value) })} className="border px-2 py-1.5" />
+                  <input type="text" placeholder="Estimated Days" value={newZone.estimated_days} onChange={(e) => setNewZone({ ...newZone, estimated_days: e.target.value })} className="border px-2 py-1.5" />
+                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 text-white font-semibold">Add Zone</button>
+                </form>
+              </div>
+
+              <div className="bg-white border border-zinc-200 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold">Courier Services</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {shippingData.couriers.map((c) => (
+                    <div key={c.id} className="border border-zinc-200 p-3 space-y-1">
+                      <p className="font-semibold">{c.name}</p>
+                      <p className="text-zinc-600">{c.supported_regions} · Base {formatPrice(c.base_rate)}</p>
+                      <p className="font-mono text-[11px] text-zinc-400 truncate">{c.tracking_url_template}</p>
+                    </div>
+                  ))}
+                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    await fetch('/api/admin/couriers', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                      body: JSON.stringify(newCourier),
+                    });
+                    await loadAllAdminData();
+                    showToast('Courier added', 'success');
+                  }}
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-200"
+                >
+                  <input type="text" required placeholder="Courier Name" value={newCourier.name} onChange={(e) => setNewCourier({ ...newCourier, name: e.target.value })} className="border px-2 py-1.5" />
+                  <input type="text" placeholder="Regions" value={newCourier.supported_regions} onChange={(e) => setNewCourier({ ...newCourier, supported_regions: e.target.value })} className="border px-2 py-1.5" />
+                  <input type="text" placeholder="Tracking URL Template" value={newCourier.tracking_url_template} onChange={(e) => setNewCourier({ ...newCourier, tracking_url_template: e.target.value })} className="border px-2 py-1.5" />
+                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 text-white font-semibold">Add Courier</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* 8. PAYMENTS */}
+          {tab === 'payments' && (
+            <div className="space-y-6 text-xs">
+              <div className="bg-white border border-zinc-200 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold">Payment Gateways (bKash, Nagad, COD, International)</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paymentData.settings.map((gw) => (
+                    <div key={gw.gateway} className="border border-zinc-200 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">{gw.display_name}</span>
+                        <span className="font-mono text-[11px] text-zinc-500">
+                          {gw.env_configured ? 'Server API Configured' : 'Manual TrxID / Env Unset'}
+                        </span>
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={gw.is_enabled}
+                            onChange={(e) =>
+                              setPaymentData((prev) => ({
+                                ...prev,
+                                settings: prev.settings.map((s) =>
+                                  s.gateway === gw.gateway ? { ...s, is_enabled: e.target.checked } : s
+                                ),
+                              }))
+                            }
+                          />
+                          <span>Enabled</span>
+                        </label>
+                        <label className="flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={gw.sandbox_mode}
+                            onChange={(e) =>
+                              setPaymentData((prev) => ({
+                                ...prev,
+                                settings: prev.settings.map((s) =>
+                                  s.gateway === gw.gateway ? { ...s, sandbox_mode: e.target.checked } : s
+                                ),
+                              }))
+                            }
+                          />
+                          <span>Sandbox Mode</span>
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Merchant Wallet Number (optional)"
+                        value={gw.merchant_number}
+                        onChange={(e) =>
+                          setPaymentData((prev) => ({
+                            ...prev,
+                            settings: prev.settings.map((s) =>
+                              s.gateway === gw.gateway ? { ...s, merchant_number: e.target.value } : s
+                            ),
+                          }))
+                        }
+                        className="w-full border px-2 py-1.5 font-mono"
+                      />
+                      <textarea
+                        rows={2}
+                        value={gw.instructions}
+                        onChange={(e) =>
+                          setPaymentData((prev) => ({
+                            ...prev,
+                            settings: prev.settings.map((s) =>
+                              s.gateway === gw.gateway ? { ...s, instructions: e.target.value } : s
+                            ),
+                          }))
+                        }
+                        className="w-full border px-2 py-1.5"
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await fetch(`/api/admin/payments/${gw.gateway}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify(gw),
+                          });
+                          await refreshStore();
+                          showToast(`${gw.display_name} saved`, 'success');
+                        }}
+                        className="px-4 py-1.5 bg-zinc-950 text-white font-semibold"
+                      >
+                        Save Gateway Settings
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-zinc-200 p-6 space-y-3">
+                <h3 className="text-sm font-semibold">Payment & Verification Records</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-zinc-950 text-white">
+                      <tr>
+                        <th className="px-3 py-2">Order</th>
+                        <th className="px-3 py-2">Gateway</th>
+                        <th className="px-3 py-2">Transaction ID</th>
+                        <th className="px-3 py-2">Amount</th>
+                        <th className="px-3 py-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-200">
+                      {paymentData.records.map((r: any) => (
+                        <tr key={r.id}>
+                          <td className="px-3 py-2 font-mono">{r.order_number}</td>
+                          <td className="px-3 py-2 uppercase">{r.gateway}</td>
+                          <td className="px-3 py-2 font-mono">{r.transaction_id || 'COD'}</td>
+                          <td className="px-3 py-2 font-mono">{formatPrice(r.amount)}</td>
+                          <td className="px-3 py-2 uppercase font-semibold">{r.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 9. COUPONS */}
+          {tab === 'coupons' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
+              <h2 className="font-display text-2xl font-semibold">Coupons & Promotional Campaigns</h2>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const res = await fetch('/api/admin/coupons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(newCoupon),
+                  });
+                  if (res.ok) {
+                    setNewCoupon({ code: '', discount_type: 'percentage', discount_value: 10, min_order_value: 0, max_uses: 100, expires_at: '', campaign_name: '' });
+                    await loadAllAdminData();
+                    showToast('Coupon created', 'success');
+                  }
+                }}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-3"
+              >
+                <input type="text" required placeholder="Code (e.g. NEXA10)" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} className="border px-3 py-2 font-mono uppercase" />
+                <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon({ ...newCoupon, discount_type: e.target.value })} className="border px-3 py-2 bg-white">
+                  <option value="percentage">Percentage (%)</option>
+                  <option value="fixed">Fixed Amount ($)</option>
+                </select>
+                <input type="number" required placeholder="Value" value={newCoupon.discount_value} onChange={(e) => setNewCoupon({ ...newCoupon, discount_value: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
+                <input type="number" placeholder="Min Order ($)" value={newCoupon.min_order_value} onChange={(e) => setNewCoupon({ ...newCoupon, min_order_value: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
+                <input type="number" placeholder="Max Uses" value={newCoupon.max_uses} onChange={(e) => setNewCoupon({ ...newCoupon, max_uses: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
+                <input type="date" value={newCoupon.expires_at} onChange={(e) => setNewCoupon({ ...newCoupon, expires_at: e.target.value })} className="border px-3 py-2" />
+                <input type="text" placeholder="Campaign Name" value={newCoupon.campaign_name} onChange={(e) => setNewCoupon({ ...newCoupon, campaign_name: e.target.value })} className="border px-3 py-2" />
+                <button type="submit" className="bg-zinc-950 text-white font-semibold px-4 py-2">Create Coupon</button>
+              </form>
+
+              <div className="space-y-2">
+                {coupons.map((cp) => (
+                  <div key={cp.id} className="border border-zinc-200 p-3 flex items-center justify-between">
+                    <div>
+                      <span className="font-mono font-semibold text-sm">{cp.code}</span>
+                      <span className="ml-3 text-zinc-600">
+                        {cp.discount_type === 'percentage' ? `${cp.discount_value}% off` : `$${cp.discount_value} off`} · Min ${cp.min_order_value} · Used {cp.used_count}/{cp.max_uses}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await fetch(`/api/admin/coupons/${cp.id}`, {
+                          method: 'DELETE',
+                          headers: { Authorization: `Bearer ${adminToken}` },
+                        });
+                        await loadAllAdminData();
+                      }}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 10. REVIEWS */}
+          {tab === 'reviews' && (
+            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
+              <h2 className="font-display text-2xl font-semibold">Reviews & Customer Questions ({reviews.length})</h2>
+              {reviews.length === 0 ? (
+                <p className="text-zinc-500">No customer reviews or questions submitted yet.</p>
+              ) : (
+                reviews.map((r) => (
+                  <div key={r.id} className="border border-zinc-200 p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="font-semibold">{r.author_name} on {r.product_name}</span>
+                      <span className="uppercase font-mono">{r.status}</span>
+                    </div>
+                    <p>{r.comment || r.question}</p>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await fetch(`/api/admin/reviews/${r.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify({ status: 'approved' }),
+                          });
+                          await loadAllAdminData();
+                        }}
+                        className="px-3 py-1 bg-zinc-950 text-white"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await fetch(`/api/admin/reviews/${r.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                            body: JSON.stringify({ status: 'rejected' }),
+                          });
+                          await loadAllAdminData();
+                        }}
+                        className="px-3 py-1 border border-zinc-300"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* 11. OFFICIAL SOCIAL MEDIA & TELEGRAM LINKS */}
+          {tab === 'social' && siteForm && (
+            <div className="space-y-6 text-xs">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const res = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(siteForm),
+                  });
+                  if (res.ok) {
+                    await refreshStore();
+                    showToast('Official social media & Telegram links saved', 'success');
+                  } else {
+                    showToast('Failed to save social links', 'error');
+                  }
+                }}
+                className="bg-white border border-zinc-200 p-6 space-y-6"
+              >
+                <div>
+                  <h2 className="font-display text-2xl font-semibold">Official Social Media & Telegram Links</h2>
+                  <p className="text-zinc-500 mt-1">
+                    Update all five official SHOPNEXA social and customer support URLs shown in the website footer, homepage, and floating support widget.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold mb-1">1. Facebook Page URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={siteForm.facebook_url}
+                        onChange={(e) => setSiteForm({ ...siteForm, facebook_url: e.target.value })}
+                        className="flex-1 border px-3 py-2 font-mono"
+                      />
+                      <a
+                        href={siteForm.facebook_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                      >
+                        Test
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">2. YouTube Channel URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={siteForm.youtube_url}
+                        onChange={(e) => setSiteForm({ ...siteForm, youtube_url: e.target.value })}
+                        className="flex-1 border px-3 py-2 font-mono"
+                      />
+                      <a
+                        href={siteForm.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                      >
+                        Test
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">3. Telegram Channel URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={siteForm.telegram_channel_url}
+                        onChange={(e) => setSiteForm({ ...siteForm, telegram_channel_url: e.target.value })}
+                        className="flex-1 border px-3 py-2 font-mono"
+                      />
+                      <a
+                        href={siteForm.telegram_channel_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                      >
+                        Test
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">4. Instagram Profile URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={siteForm.instagram_url}
+                        onChange={(e) => setSiteForm({ ...siteForm, instagram_url: e.target.value })}
+                        className="flex-1 border px-3 py-2 font-mono"
+                      />
+                      <a
+                        href={siteForm.instagram_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                      >
+                        Test
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">5. Telegram Customer Support URL</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={siteForm.telegram_support_url}
+                        onChange={(e) => setSiteForm({ ...siteForm, telegram_support_url: e.target.value })}
+                        className="flex-1 border px-3 py-2 font-mono"
+                      />
+                      <a
+                        href={siteForm.telegram_support_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                      >
+                        Test
+                      </a>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-1">Telegram Support Handle</label>
+                    <input
+                      type="text"
+                      value={siteForm.telegram_support_username}
+                      onChange={(e) => setSiteForm({ ...siteForm, telegram_support_username: e.target.value })}
+                      className="w-full border px-3 py-2 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-1">Floating Telegram Support Instructions</label>
+                  <textarea
+                    rows={2}
+                    value={siteForm.telegram_support_instructions}
+                    onChange={(e) => setSiteForm({ ...siteForm, telegram_support_instructions: e.target.value })}
+                    className="w-full border px-3 py-2"
+                  />
+                </div>
+
+                <div className="border-t border-zinc-200 pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold">Telegram Bot Server Alerts</h3>
+                    <span className="font-mono text-zinc-500">
+                      {settings?.telegram_configured ? 'TELEGRAM_BOT_TOKEN Configured' : 'Set TELEGRAM_BOT_TOKEN in Secrets'}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    {(
+                      [
+                        ['new_order', 'New Order Alerts'],
+                        ['new_customer', 'New Customer Alerts'],
+                        ['payment', 'Payment Notifications'],
+                        ['low_stock', 'Low Stock Alerts'],
+                        ['order_status', 'Order Status Updates'],
+                        ['support', 'Support Alerts'],
+                      ] as const
+                    ).map(([k, label]) => (
+                      <label key={k} className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={siteForm.telegram_alerts[k]}
+                          onChange={(e) =>
+                            setSiteForm({
+                              ...siteForm,
+                              telegram_alerts: { ...siteForm.telegram_alerts, [k]: e.target.checked },
+                            })
+                          }
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await fetch('/api/admin/telegram/test', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${adminToken}` },
+                      });
+                      const d = await res.json();
+                      showToast(res.ok && d.sent ? 'Test alert sent to Telegram' : d.error || 'Telegram not configured', res.ok ? 'success' : 'error');
+                    }}
+                    className="px-3 py-1.5 border border-zinc-300 inline-flex items-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Test Telegram Alert</span>
+                  </button>
+                </div>
+
+                <button type="submit" className="px-6 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold">
+                  Save Social & Telegram Links
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* 12. WEBSITE, CREDENTIALS & BACKUP SETTINGS */}
+          {tab === 'settings' && siteForm && (
+            <div className="space-y-6 text-xs">
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const res = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                    body: JSON.stringify(siteForm),
+                  });
+                  if (res.ok) {
+                    await refreshStore();
+                    showToast('Website & location settings saved', 'success');
+                  }
+                }}
+                className="bg-white border border-zinc-200 p-6 space-y-6"
+              >
+                <h2 className="font-display text-2xl font-semibold">Website & Business Location Settings</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-medium mb-1">Brand Name</label>
+                    <input type="text" value={siteForm.brand_name} onChange={(e) => setSiteForm({ ...siteForm, brand_name: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Tagline</label>
+                    <input type="text" value={siteForm.tagline} onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Hero Title</label>
+                    <input type="text" value={siteForm.hero_title} onChange={(e) => setSiteForm({ ...siteForm, hero_title: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Promo Banner Text</label>
+                    <input type="text" value={siteForm.promo_banner_text} onChange={(e) => setSiteForm({ ...siteForm, promo_banner_text: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Contact Email</label>
+                    <input type="email" value={siteForm.contact_email} onChange={(e) => setSiteForm({ ...siteForm, contact_email: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Business Location / Address</label>
+                    <input type="text" value={siteForm.business_address} onChange={(e) => setSiteForm({ ...siteForm, business_address: e.target.value })} className="w-full border px-3 py-2" />
+                  </div>
+                </div>
+
+                <button type="submit" className="px-6 py-2.5 bg-zinc-950 text-white font-semibold">
+                  Save Website Settings
+                </button>
+              </form>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setCredBusy(true);
+                  try {
+                    const res = await fetch('/api/admin/auth/credentials', {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+                      body: JSON.stringify(credForm),
+                    });
+                    const d = await res.json();
+                    if (!res.ok) {
+                      showToast(d.error || 'Failed to update admin credentials', 'error');
+                    } else {
+                      setCredForm({ currentPasscode: '', newUsername: '', newPasscode: '' });
+                      showToast('Administrator credentials updated', 'success');
+                    }
+                  } finally {
+                    setCredBusy(false);
+                  }
+                }}
+                className="bg-white border border-zinc-200 p-6 space-y-4"
+              >
+                <h3 className="text-sm font-semibold">Administrator Credentials</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-medium mb-1">Current Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={credForm.currentPasscode}
+                      onChange={(e) => setCredForm({ ...credForm, currentPasscode: e.target.value })}
+                      className="w-full border px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">New Username (Optional)</label>
+                    <input
+                      type="text"
+                      value={credForm.newUsername}
+                      onChange={(e) => setCredForm({ ...credForm, newUsername: e.target.value })}
+                      placeholder="Leave blank to keep current"
+                      className="w-full border px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">New Password (Optional, min 6)</label>
+                    <input
+                      type="password"
+                      minLength={6}
+                      value={credForm.newPasscode}
+                      onChange={(e) => setCredForm({ ...credForm, newPasscode: e.target.value })}
+                      placeholder="Leave blank to keep current"
+                      className="w-full border px-3 py-2"
+                    />
+                  </div>
+                </div>
+                <button type="submit" disabled={credBusy} className="px-5 py-2 bg-zinc-950 text-white font-semibold">
+                  {credBusy ? 'Updating...' : 'Update Admin Credentials'}
+                </button>
+              </form>
+
+              <div className="bg-white border border-zinc-200 p-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold">Database Backup & System Logs</h3>
+                  <p className="text-zinc-500 mt-0.5">Download a full SQLite snapshot of products, orders, users, and settings.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleDownloadBackup()}
+                  className="px-4 py-2 bg-[#C9A227] text-black font-semibold flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Download Database Backup (.db)</span>
+                </button>
+              </div>
+
+              {errorLogs.length > 0 && (
+                <div className="bg-white border border-zinc-200 p-6 space-y-2">
+                  <h3 className="text-sm font-semibold">Recent Server Error Logs</h3>
+                  {errorLogs.slice(0, 10).map((l: any) => (
+                    <div key={l.id} className="font-mono text-[11px] text-red-700 border-b pb-1">
+                      [{l.created_at}] {l.route}: {l.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+
+      {editingProduct.open && (
+        <AdminProductEditor
+          initialProduct={editingProduct.product}
+          defaultType={editingProduct.defaultType}
+          categories={categories}
+          onClose={() => setEditingProduct({ open: false, product: null, defaultType: 'own' })}
+          onSaved={async () => {
+            await loadAllAdminData();
+            await refreshStore();
+          }}
+        />
+      )}
+    </div>
+  );
+}
