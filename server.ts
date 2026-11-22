@@ -2215,26 +2215,46 @@ app.get(['/health', '/api/health'], (_req, res) => {
   res.status(200).json({ status: 'ok', service: 'SHOPNEXA ROBI HUB' });
 });
 
-app.get('/robots.txt', (req, res) => {
-  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
-  const host = req.get('host') || 'shopnexa-2.onrender.com';
-  const baseUrl = `${proto}://${host}`;
+function resolvePublicBaseUrl(req: express.Request): string {
+  const rawProto = req.get('x-forwarded-proto') || req.protocol || 'https';
+  const proto = rawProto.split(',')[0].trim() === 'http' ? 'http' : 'https';
+  const host = (req.get('x-forwarded-host') || req.get('host') || 'shopnexa-2.onrender.com').split(',')[0].trim();
+  if (host.includes('onrender.com')) {
+    return 'https://shopnexa-2.onrender.com';
+  }
+  return `${proto}://${host}`;
+}
+
+app.get(/^\/+robots\.txt$/i, (req, res) => {
+  const baseUrl = resolvePublicBaseUrl(req);
+  const rules = [
+    'Allow: /',
+    'Allow: /api/store/',
+    'Allow: /api/exchange-rates',
+    'Disallow: /api/admin/',
+    'Disallow: /api/auth/',
+    'Disallow: /api/orders/',
+    'Disallow: /api/cart/',
+    'Disallow: /api/wishlist/',
+    'Disallow: /api/notifications',
+    'Disallow: /api/addresses',
+    'Disallow: /api/upload',
+    'Disallow: /admin',
+  ].join('\n');
   res
     .status(200)
     .set('Cache-Control', 'no-cache, no-store, must-revalidate')
     .type('text/plain; charset=utf-8')
     .send(
-      `User-agent: Googlebot\nAllow: /\n\n` +
-        `User-agent: Google-InspectionTool\nAllow: /\n\n` +
-        `User-agent: *\nAllow: /\nDisallow: /api/\n\n` +
+      `User-agent: Googlebot\n${rules}\n\n` +
+        `User-agent: Google-InspectionTool\n${rules}\n\n` +
+        `User-agent: *\n${rules}\n\n` +
         `Sitemap: ${baseUrl}/sitemap.xml\n`
     );
 });
 
-app.get('/sitemap.xml', (req, res) => {
-  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
-  const host = req.get('host') || 'shopnexa-2.onrender.com';
-  const baseUrl = `${proto}://${host}`;
+app.get(/^\/+sitemap\.xml$/i, (req, res) => {
+  const baseUrl = resolvePublicBaseUrl(req);
   const today = new Date().toISOString().slice(0, 10);
   res
     .status(200)

@@ -1,11 +1,43 @@
 User-agent: Googlebot
 Allow: /
+Allow: /api/store/
+Allow: /api/exchange-rates
+Disallow: /api/admin/
+Disallow: /api/auth/
+Disallow: /api/orders/
+Disallow: /api/cart/
+Disallow: /api/wishlist/
+Disallow: /api/notifications
+Disallow: /api/addresses
+Disallow: /api/upload
+Disallow: /admin
 
 User-agent: Google-InspectionTool
 Allow: /
+Allow: /api/store/
+Allow: /api/exchange-rates
+Disallow: /api/admin/
+Disallow: /api/auth/
+Disallow: /api/orders/
+Disallow: /api/cart/
+Disallow: /api/wishlist/
+Disallow: /api/notifications
+Disallow: /api/addresses
+Disallow: /api/upload
+Disallow: /admin
 
 User-agent: *
 Allow: /
-Disallow: /api/
+Allow: /api/store/
+Allow: /api/exchange-rates
+Disallow: /api/admin/
+Disallow: /api/auth/
+Disallow: /api/orders/
+Disallow: /api/cart/
+Disallow: /api/wishlist/
+Disallow: /api/notifications
+Disallow: /api/addresses
+Disallow: /api/upload
+Disallow: /admin
 
 Sitemap: https://shopnexa-2.onrender.com/sitemap.xml
