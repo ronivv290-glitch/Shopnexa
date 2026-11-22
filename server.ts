@@ -36,7 +36,7 @@ import type { OrderStatus, PaymentMethod, PaymentStatus } from './src/types.ts';
 initDatabase();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '5mb' }));
