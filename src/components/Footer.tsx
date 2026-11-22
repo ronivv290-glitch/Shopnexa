@@ -13,7 +13,7 @@ export function Footer() {
         <div className="lg:col-span-2 space-y-4">
           <div className="space-y-1">
             <h2 className="font-display text-2xl font-semibold tracking-[0.14em] text-white">
-              {settings?.brand_name || 'SHOPNEXA'}
+              {settings?.brand_name || 'SHOPNEXA ROBI HUB'}
             </h2>
             <p className="text-xs font-semibold tracking-[0.2em] text-[#E4C76B]">
               {settings?.tagline || 'THE FUTURE OF SHOPPING 🛍️'}
@@ -32,7 +32,7 @@ export function Footer() {
               href={settings?.facebook_url || 'https://www.facebook.com/share/1WFDAntMgp/'}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="SHOPNEXA Facebook Page"
+              aria-label="SHOPNEXA ROBI HUB Facebook Page"
               title="Facebook Page"
               className="w-9 h-9 border border-zinc-800 hover:border-[#C9A227] flex items-center justify-center text-zinc-300 hover:text-[#E4C76B] transition-colors"
             >
@@ -42,7 +42,7 @@ export function Footer() {
               href={settings?.youtube_url || 'https://www.youtube.com/@shopnexamarketplase'}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="SHOPNEXA YouTube Channel"
+              aria-label="SHOPNEXA ROBI HUB YouTube Channel"
               title="YouTube Channel"
               className="w-9 h-9 border border-zinc-800 hover:border-[#C9A227] flex items-center justify-center text-zinc-300 hover:text-[#E4C76B] transition-colors"
             >
@@ -52,7 +52,7 @@ export function Footer() {
               href={settings?.telegram_channel_url || 'https://t.me/shopnexamarketplase'}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="SHOPNEXA Telegram Channel"
+              aria-label="SHOPNEXA ROBI HUB Telegram Channel"
               title="Telegram Channel"
               className="w-9 h-9 border border-zinc-800 hover:border-[#C9A227] flex items-center justify-center text-zinc-300 hover:text-[#E4C76B] transition-colors"
             >
@@ -62,7 +62,7 @@ export function Footer() {
               href={settings?.instagram_url || 'https://www.instagram.com/shopnexa978?knvt=NTd5OHhtMDN6bGc3'}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="SHOPNEXA Instagram Profile"
+              aria-label="SHOPNEXA ROBI HUB Instagram Profile"
               title="Instagram Profile"
               className="w-9 h-9 border border-zinc-800 hover:border-[#C9A227] flex items-center justify-center text-zinc-300 hover:text-[#E4C76B] transition-colors"
             >
@@ -72,7 +72,7 @@ export function Footer() {
               href={settings?.telegram_support_url || 'https://t.me/ShoponexaMarketplaseSuport'}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="SHOPNEXA Telegram Customer Support"
+              aria-label="SHOPNEXA ROBI HUB Telegram Customer Support"
               title="Telegram Customer Support"
               className="w-9 h-9 border border-zinc-800 hover:border-[#C9A227] flex items-center justify-center text-zinc-300 hover:text-[#E4C76B] transition-colors"
             >
@@ -210,7 +210,7 @@ export function Footer() {
 
       <div className="border-t border-zinc-900 py-5 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
-          <p>© {new Date().getFullYear()} {settings?.brand_name || 'SHOPNEXA'}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {settings?.brand_name || 'SHOPNEXA ROBI HUB'}. All rights reserved.</p>
           <p className="text-center sm:text-right">
             SHOP • DISCOVER • ENJOY — Global Direct Marketplace · Rangpur, Bangladesh
           </p>

@@ -33,6 +33,7 @@ import type {
   SiteSettings,
 } from '../types.ts';
 import { AdminProductEditor } from './AdminProductEditor.tsx';
+import { PWAInstallButton } from './PWAInstallButton.tsx';
 
 type AdminTab =
   | 'overview'
@@ -254,11 +255,11 @@ export function AdminDashboard() {
   if (!adminToken) {
     return (
       <div className="max-w-md mx-auto px-4 py-16">
-        <div className="border border-zinc-300 bg-zinc-950 text-white p-8 space-y-6">
+        <div className="border border-[#C9A227]/40 bg-zinc-950 text-white p-8 space-y-6 shadow-2xl">
           <div className="flex items-center gap-3 text-[#E4C76B]">
             {loginStep === 'gmail' ? <KeyRound className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
             <div>
-              <p className="text-xs font-semibold tracking-[0.2em]">SHOPNEXA CONSOLE</p>
+              <p className="text-xs font-semibold tracking-[0.2em]">SHOPNEXA ROBI HUB CONSOLE</p>
               <h1 className="font-display text-3xl font-semibold text-white">
                 {authStatus?.needsInitialSetup
                   ? 'Claim Administrator Access'
@@ -458,11 +459,11 @@ export function AdminDashboard() {
   const maxChartRev = Math.max(1, ...(analytics?.salesSeries || []).map((s: any) => s.revenue));
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950">
-      <div className="bg-zinc-950 text-white border-b border-[#C9A227]/30 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="bg-black text-white border-b border-[#C9A227]/35 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-[11px] font-semibold tracking-[0.2em] text-[#E4C76B]">SHOPNEXA CONTROL CENTER</p>
-          <h1 className="font-display text-2xl font-semibold">Administrator Dashboard</h1>
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-[#E4C76B]">SHOPNEXA ROBI HUB CONTROL CENTER</p>
+          <h1 className="font-display text-2xl font-semibold text-white">Administrator Dashboard</h1>
           {adminDisplayName && (
             <p className="text-[11px] font-mono text-zinc-400 mt-0.5">
               Private Admin Session: <span className="text-[#E4C76B] font-semibold">{adminDisplayName}</span>
@@ -470,6 +471,7 @@ export function AdminDashboard() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <PWAInstallButton variant="header" label="Download App" />
           <button
             type="button"
             disabled={zipBusy}
@@ -482,7 +484,7 @@ export function AdminDashboard() {
           <button
             type="button"
             onClick={logoutAdmin}
-            className="px-4 py-2 border border-zinc-700 hover:border-[#C9A227] text-xs font-semibold flex items-center gap-2"
+            className="px-4 py-2 border border-zinc-700 hover:border-[#C9A227] text-zinc-200 hover:text-white text-xs font-semibold flex items-center gap-2 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out Admin</span>
@@ -494,18 +496,19 @@ export function AdminDashboard() {
         <aside className="lg:col-span-3 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = tab === item.id;
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => setTab(item.id)}
                 className={`w-full px-4 py-2.5 text-left text-xs font-semibold flex items-center gap-2.5 border transition-colors ${
-                  tab === item.id
-                    ? 'bg-zinc-950 text-white border-zinc-950'
-                    : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-900'
+                  active
+                    ? 'bg-[#C9A227] text-black border-[#C9A227]'
+                    : 'bg-zinc-900 text-zinc-200 border-zinc-800 hover:border-[#C9A227]/60 hover:text-white'
                 }`}
               >
-                <Icon className="w-4 h-4 text-[#C9A227]" />
+                <Icon className={`w-4 h-4 ${active ? 'text-black' : 'text-[#E4C76B]'}`} />
                 <span>{item.label}</span>
               </button>
             );
@@ -517,16 +520,16 @@ export function AdminDashboard() {
           {tab === 'overview' && analytics && (
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <h2 className="font-display text-2xl font-semibold">Marketplace Overview</h2>
+                <h2 className="font-display text-2xl font-semibold text-white">Marketplace Overview</h2>
                 <select
                   value={daysFilter}
                   onChange={(e) => setDaysFilter(Number(e.target.value))}
-                  className="border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold"
+                  className="border border-zinc-700 bg-zinc-900 text-white px-3 py-1.5 text-xs font-semibold focus:border-[#C9A227] focus:outline-none"
                 >
-                  <option value={7}>Last 7 Days</option>
-                  <option value={30}>Last 30 Days</option>
-                  <option value={90}>Last 90 Days</option>
-                  <option value={365}>Last 365 Days</option>
+                  <option value={7} className="bg-zinc-950 text-white">Last 7 Days</option>
+                  <option value={30} className="bg-zinc-950 text-white">Last 30 Days</option>
+                  <option value={90} className="bg-zinc-950 text-white">Last 90 Days</option>
+                  <option value={365} className="bg-zinc-950 text-white">Last 365 Days</option>
                 </select>
               </div>
 
@@ -547,30 +550,30 @@ export function AdminDashboard() {
                   { label: 'Low Stock Alerts', val: analytics.metrics.lowStockCount },
                   { label: 'Affiliate Clicks', val: analytics.metrics.affiliateClicks },
                 ].map((m) => (
-                  <div key={m.label} className="bg-white border border-zinc-200 p-4">
-                    <p className="text-zinc-500">{m.label}</p>
-                    <p className="text-lg font-mono tabular-nums font-semibold text-zinc-950 mt-1">{m.val}</p>
+                  <div key={m.label} className="bg-zinc-900 border border-zinc-800 p-4">
+                    <p className="text-zinc-400">{m.label}</p>
+                    <p className="text-lg font-mono tabular-nums font-semibold text-white mt-1">{m.val}</p>
                   </div>
                 ))}
               </div>
 
               {/* SVG Sales & Clicks Chart */}
-              <div className="bg-white border border-zinc-200 p-6 space-y-4">
-                <h3 className="text-sm font-semibold">Sales Revenue & Activity Timeline</h3>
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                <h3 className="text-sm font-semibold text-white">Sales Revenue & Activity Timeline</h3>
                 {analytics.salesSeries.length === 0 ? (
-                  <p className="text-xs text-zinc-500 py-8 text-center">
+                  <p className="text-xs text-zinc-400 py-8 text-center">
                     No order or affiliate click activity recorded in this period yet.
                   </p>
                 ) : (
-                  <div className="h-44 flex items-end gap-2 border-b border-l border-zinc-200 p-3 overflow-x-auto">
+                  <div className="h-44 flex items-end gap-2 border-b border-l border-zinc-700 p-3 overflow-x-auto">
                     {analytics.salesSeries.map((pt: any) => {
                       const heightPct = Math.max(8, Math.round((pt.revenue / maxChartRev) * 100));
                       return (
                         <div key={pt.date} className="flex-1 min-w-[36px] flex flex-col items-center gap-1">
-                          <span className="text-[10px] font-mono text-zinc-500">{pt.orders}o/{pt.clicks}c</span>
+                          <span className="text-[10px] font-mono text-zinc-300">{pt.orders}o/{pt.clicks}c</span>
                           <div
                             title={`${pt.date}: $${pt.revenue}`}
-                            className="w-full max-w-[32px] bg-zinc-950 hover:bg-[#C9A227] transition-colors"
+                            className="w-full max-w-[32px] bg-[#C9A227] hover:bg-[#E4C76B] transition-colors"
                             style={{ height: `${heightPct}%` }}
                           />
                           <span className="text-[10px] font-mono text-zinc-400">{pt.date.slice(5)}</span>
@@ -582,32 +585,32 @@ export function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white border border-zinc-200 p-5 space-y-3 text-xs">
-                  <h3 className="text-sm font-semibold">Low Stock Direct Products</h3>
+                <div className="bg-zinc-900 border border-zinc-800 p-5 space-y-3 text-xs">
+                  <h3 className="text-sm font-semibold text-white">Low Stock Direct Products</h3>
                   {analytics.lowStockProducts.length === 0 ? (
-                    <p className="text-zinc-500">All direct products are adequately stocked.</p>
+                    <p className="text-zinc-400">All direct products are adequately stocked.</p>
                   ) : (
                     analytics.lowStockProducts.map((p: Product) => (
-                      <div key={p.id} className="flex justify-between py-2 border-b border-zinc-100">
-                        <span className="font-medium">{p.name}</span>
-                        <span className="font-mono text-red-600 font-semibold">{p.total_stock} left</span>
+                      <div key={p.id} className="flex justify-between py-2 border-b border-zinc-800">
+                        <span className="font-medium text-zinc-200">{p.name}</span>
+                        <span className="font-mono text-red-400 font-semibold">{p.total_stock} left</span>
                       </div>
                     ))
                   )}
                 </div>
 
-                <div className="bg-white border border-zinc-200 p-5 space-y-3 text-xs">
-                  <h3 className="text-sm font-semibold">Recent Orders</h3>
+                <div className="bg-zinc-900 border border-zinc-800 p-5 space-y-3 text-xs">
+                  <h3 className="text-sm font-semibold text-white">Recent Orders</h3>
                   {analytics.recentOrders.length === 0 ? (
-                    <p className="text-zinc-500">No direct orders placed yet.</p>
+                    <p className="text-zinc-400">No direct orders placed yet.</p>
                   ) : (
                     analytics.recentOrders.map((o: Order) => (
-                      <div key={o.id} className="flex justify-between py-2 border-b border-zinc-100">
+                      <div key={o.id} className="flex justify-between py-2 border-b border-zinc-800">
                         <div>
-                          <span className="font-mono font-semibold">{o.order_number}</span>
-                          <span className="text-zinc-500 ml-2">{o.customer_name}</span>
+                          <span className="font-mono font-semibold text-white">{o.order_number}</span>
+                          <span className="text-zinc-400 ml-2">{o.customer_name}</span>
                         </div>
-                        <span className="font-mono font-semibold">{formatPrice(o.final_total)}</span>
+                        <span className="font-mono font-semibold text-[#E4C76B]">{formatPrice(o.final_total)}</span>
                       </div>
                     ))
                   )}
@@ -618,14 +621,14 @@ export function AdminDashboard() {
 
           {/* 2. PRODUCTS */}
           {tab === 'products' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-4">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-2xl font-semibold">Products Management</h2>
+                <h2 className="font-display text-2xl font-semibold text-white">Products Management</h2>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'own' })}
-                    className="px-4 py-2 bg-zinc-950 text-white text-xs font-semibold flex items-center gap-1.5"
+                    className="px-4 py-2 bg-zinc-950 border border-zinc-700 hover:border-[#C9A227] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Own Product</span>
@@ -633,7 +636,7 @@ export function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'affiliate' })}
-                    className="px-4 py-2 bg-[#C9A227] text-black text-xs font-semibold flex items-center gap-1.5"
+                    className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Add Affiliate Product</span>
@@ -641,9 +644,9 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-zinc-800">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-zinc-950 text-white">
+                  <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                     <tr>
                       <th className="px-3 py-2.5">Code / SKU</th>
                       <th className="px-3 py-2.5">Name</th>
@@ -654,24 +657,24 @@ export function AdminDashboard() {
                       <th className="px-3 py-2.5 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200">
+                  <tbody className="divide-y divide-zinc-800">
                     {adminProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-zinc-50">
-                        <td className="px-3 py-2.5 font-mono">{p.product_code}</td>
-                        <td className="px-3 py-2.5 font-semibold">{p.name}</td>
-                        <td className="px-3 py-2.5 uppercase font-semibold">
+                      <tr key={p.id} className="hover:bg-zinc-950/60">
+                        <td className="px-3 py-2.5 font-mono text-zinc-300">{p.product_code}</td>
+                        <td className="px-3 py-2.5 font-semibold text-white">{p.name}</td>
+                        <td className="px-3 py-2.5 uppercase font-semibold text-zinc-300">
                           {p.product_type === 'affiliate' ? 'Affiliate' : 'Own Direct'}
                         </td>
-                        <td className="px-3 py-2.5 font-mono tabular-nums">{formatPrice(p.sale_price || p.selling_price)}</td>
-                        <td className="px-3 py-2.5 font-mono tabular-nums">
+                        <td className="px-3 py-2.5 font-mono tabular-nums text-white">{formatPrice(p.sale_price || p.selling_price)}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums text-zinc-300">
                           {p.total_colors}C / {p.total_sizes}S / {p.total_variations}V
                         </td>
-                        <td className="px-3 py-2.5 font-mono tabular-nums">{p.total_stock}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums text-white">{p.total_stock}</td>
                         <td className="px-3 py-2.5 text-right space-x-2">
                           <button
                             type="button"
                             onClick={() => setEditingProduct({ open: true, product: p, defaultType: p.product_type })}
-                            className="text-zinc-700 hover:text-black inline-flex items-center gap-1"
+                            className="text-zinc-200 hover:text-[#E4C76B] inline-flex items-center gap-1"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Edit</span>
@@ -691,7 +694,7 @@ export function AdminDashboard() {
                                 showToast(d.error || 'Cannot delete', 'error');
                               }
                             }}
-                            className="text-red-600 hover:text-red-800 inline-flex items-center"
+                            className="text-red-400 hover:text-red-300 inline-flex items-center"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -706,8 +709,8 @@ export function AdminDashboard() {
 
           {/* 3. CATEGORIES */}
           {tab === 'categories' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
-              <h2 className="font-display text-2xl font-semibold">Categories Management ({categories.length})</h2>
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-6 text-xs">
+              <h2 className="font-display text-2xl font-semibold text-white">Categories Management ({categories.length})</h2>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -730,19 +733,19 @@ export function AdminDashboard() {
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   placeholder="New category name"
-                  className="flex-1 border border-zinc-300 px-3 py-2"
+                  className="flex-1 border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                 />
-                <button type="submit" className="px-4 py-2 bg-zinc-950 text-white font-semibold">
+                <button type="submit" className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold">
                   Add Category
                 </button>
               </form>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {categories.map((cat) => (
-                  <div key={cat.id} className="border border-zinc-200 p-3 flex items-center justify-between">
+                  <div key={cat.id} className="border border-zinc-800 bg-zinc-950 p-3 flex items-center justify-between">
                     <div>
-                      <p className="font-semibold text-zinc-950">{cat.name}</p>
-                      <p className="text-zinc-500 font-mono">{cat.product_count ?? 0} products</p>
+                      <p className="font-semibold text-white">{cat.name}</p>
+                      <p className="text-zinc-400 font-mono">{cat.product_count ?? 0} products</p>
                     </div>
                     <button
                       type="button"
@@ -754,7 +757,7 @@ export function AdminDashboard() {
                         if (res.ok) await refreshStore();
                         else showToast('Remove products in this category first', 'error');
                       }}
-                      className="text-zinc-400 hover:text-red-600"
+                      className="text-zinc-400 hover:text-red-400"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -766,30 +769,30 @@ export function AdminDashboard() {
 
           {/* 4. PRIVATE AFFILIATE CATALOG & REPORTS (Admin Only) */}
           {tab === 'affiliates' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-6 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-2xl font-semibold">Private Affiliate Products & Reports</h2>
-                  <p className="text-zinc-500 mt-0.5">
+                  <h2 className="font-display text-2xl font-semibold text-white">Private Affiliate Products & Reports</h2>
+                  <p className="text-zinc-300 mt-0.5">
                     Private Admin Vault: affiliate products added here are visible only inside your Admin Dashboard and never shown to public visitors.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setEditingProduct({ open: true, product: null, defaultType: 'affiliate' })}
-                  className="px-4 py-2 bg-[#C9A227] text-black font-semibold"
+                  className="px-4 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold"
                 >
                   + Add Affiliate Product
                 </button>
               </div>
 
               <div className="space-y-2">
-                <h3 className="font-semibold text-sm">
+                <h3 className="font-semibold text-sm text-white">
                   Your Affiliate Products ({adminProducts.filter((p) => p.product_type === 'affiliate').length})
                 </h3>
-                <div className="overflow-x-auto border border-zinc-200">
+                <div className="overflow-x-auto border border-zinc-800">
                   <table className="w-full text-left">
-                    <thead className="bg-zinc-950 text-white">
+                    <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                       <tr>
                         <th className="px-3 py-2">Code</th>
                         <th className="px-3 py-2">Product</th>
@@ -798,10 +801,10 @@ export function AdminDashboard() {
                         <th className="px-3 py-2 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200">
+                    <tbody className="divide-y divide-zinc-800">
                       {adminProducts.filter((p) => p.product_type === 'affiliate').length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-3 py-4 text-center text-zinc-500">
+                          <td colSpan={5} className="px-3 py-4 text-center text-zinc-400">
                             No affiliate products added yet.
                           </td>
                         </tr>
@@ -809,10 +812,10 @@ export function AdminDashboard() {
                         adminProducts
                           .filter((p) => p.product_type === 'affiliate')
                           .map((p) => (
-                            <tr key={p.id} className="hover:bg-zinc-50">
-                              <td className="px-3 py-2.5 font-mono">{p.product_code}</td>
-                              <td className="px-3 py-2.5 font-semibold">{p.name}</td>
-                              <td className="px-3 py-2.5 font-mono tabular-nums">
+                            <tr key={p.id} className="hover:bg-zinc-950/60">
+                              <td className="px-3 py-2.5 font-mono text-zinc-300">{p.product_code}</td>
+                              <td className="px-3 py-2.5 font-semibold text-white">{p.name}</td>
+                              <td className="px-3 py-2.5 font-mono tabular-nums text-white">
                                 {formatPrice(p.sale_price || p.selling_price)}
                               </td>
                               <td className="px-3 py-2.5 max-w-xs truncate">
@@ -821,20 +824,20 @@ export function AdminDashboard() {
                                     href={p.affiliate_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[#9C7A16] hover:underline inline-flex items-center gap-1 font-mono"
+                                    className="text-[#E4C76B] hover:underline inline-flex items-center gap-1 font-mono"
                                   >
                                     <span>Open Affiliate Link</span>
                                     <ExternalLink className="w-3 h-3 shrink-0" />
                                   </a>
                                 ) : (
-                                  <span className="text-zinc-400">No URL</span>
+                                  <span className="text-zinc-500">No URL</span>
                                 )}
                               </td>
                               <td className="px-3 py-2.5 text-right space-x-2">
                                 <button
                                   type="button"
                                   onClick={() => setEditingProduct({ open: true, product: p, defaultType: 'affiliate' })}
-                                  className="text-zinc-700 hover:text-black inline-flex items-center gap-1"
+                                  className="text-zinc-200 hover:text-[#E4C76B] inline-flex items-center gap-1"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                   <span>Edit</span>
@@ -854,7 +857,7 @@ export function AdminDashboard() {
                                       showToast(d.error || 'Cannot delete', 'error');
                                     }
                                   }}
-                                  className="text-red-600 hover:text-red-800 inline-flex items-center"
+                                  className="text-red-400 hover:text-red-300 inline-flex items-center"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -867,9 +870,9 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto border border-zinc-200">
+              <div className="overflow-x-auto border border-zinc-800">
                 <table className="w-full text-left">
-                  <thead className="bg-zinc-950 text-white">
+                  <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                     <tr>
                       <th className="px-3 py-2">Code</th>
                       <th className="px-3 py-2">Product</th>
@@ -877,18 +880,18 @@ export function AdminDashboard() {
                       <th className="px-3 py-2 text-right">Tracked Clicks</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200">
+                  <tbody className="divide-y divide-zinc-800">
                     {affiliateReports.byProduct.map((row: any) => (
                       <tr key={row.id}>
-                        <td className="px-3 py-2 font-mono">{row.product_code}</td>
-                        <td className="px-3 py-2 font-semibold">{row.name}</td>
+                        <td className="px-3 py-2 font-mono text-zinc-300">{row.product_code}</td>
+                        <td className="px-3 py-2 font-semibold text-white">{row.name}</td>
                         <td className="px-3 py-2 font-mono truncate max-w-xs">
                           {row.affiliate_url ? (
                             <a
                               href={row.affiliate_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[#9C7A16] hover:underline"
+                              className="text-[#E4C76B] hover:underline"
                             >
                               {row.affiliate_url}
                             </a>
@@ -896,7 +899,7 @@ export function AdminDashboard() {
                             '-'
                           )}
                         </td>
-                        <td className="px-3 py-2 font-mono tabular-nums text-right font-semibold">{row.click_count}</td>
+                        <td className="px-3 py-2 font-mono tabular-nums text-right font-semibold text-white">{row.click_count}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -904,12 +907,12 @@ export function AdminDashboard() {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">Recent Affiliate Click Log ({affiliateReports.clicks.length})</h3>
+                <h3 className="font-semibold text-white mb-2">Recent Affiliate Click Log ({affiliateReports.clicks.length})</h3>
                 <div className="space-y-1.5 max-h-60 overflow-y-auto">
                   {affiliateReports.clicks.map((c: any) => (
-                    <div key={c.id} className="border border-zinc-200 p-2.5 flex justify-between">
-                      <span>{c.product_name} ({[c.selected_color, c.selected_size].filter(Boolean).join(', ') || 'Default'})</span>
-                      <span className="font-mono text-zinc-500">{c.clicked_at}</span>
+                    <div key={c.id} className="border border-zinc-800 bg-zinc-950 p-2.5 flex justify-between">
+                      <span className="text-zinc-200">{c.product_name} ({[c.selected_color, c.selected_size].filter(Boolean).join(', ') || 'Default'})</span>
+                      <span className="font-mono text-zinc-400">{c.clicked_at}</span>
                     </div>
                   ))}
                 </div>
@@ -919,31 +922,31 @@ export function AdminDashboard() {
 
           {/* 5. ORDERS */}
           {tab === 'orders' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4 text-xs">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-2xl font-semibold">Orders Management ({filteredOrders.length})</h2>
+                <h2 className="font-display text-2xl font-semibold text-white">Orders Management ({filteredOrders.length})</h2>
                 <div className="flex flex-wrap gap-2">
                   <input
                     type="search"
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
                     placeholder="Search Order ID, customer..."
-                    className="border border-zinc-300 px-3 py-1.5"
+                    className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-1.5 focus:border-[#C9A227] focus:outline-none"
                   />
                   <select
                     value={orderStatusFilter}
                     onChange={(e) => setOrderStatusFilter(e.target.value)}
-                    className="border border-zinc-300 px-3 py-1.5 bg-white"
+                    className="border border-zinc-700 px-3 py-1.5 bg-zinc-950 text-white focus:border-[#C9A227] focus:outline-none"
                   >
-                    <option value="All">All Statuses</option>
+                    <option value="All" className="bg-zinc-950 text-white">All Statuses</option>
                     {['Pending', 'Confirmed', 'Processing', 'Ready to Ship', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded'].map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s} value={s} className="bg-zinc-950 text-white">{s}</option>
                     ))}
                   </select>
                   <button
                     type="button"
                     onClick={exportOrdersCsv}
-                    className="px-3 py-1.5 border border-zinc-900 font-semibold flex items-center gap-1"
+                    className="px-3 py-1.5 border border-zinc-700 hover:border-[#C9A227] text-zinc-200 hover:text-white font-semibold flex items-center gap-1"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Export CSV</span>
@@ -951,9 +954,9 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-zinc-800">
                 <table className="w-full text-left">
-                  <thead className="bg-zinc-950 text-white">
+                  <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                     <tr>
                       <th className="px-3 py-2">Order ID</th>
                       <th className="px-3 py-2">Customer</th>
@@ -963,24 +966,24 @@ export function AdminDashboard() {
                       <th className="px-3 py-2 text-right">Manage</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200">
+                  <tbody className="divide-y divide-zinc-800">
                     {filteredOrders.map((o) => (
-                      <tr key={o.id}>
-                        <td className="px-3 py-2.5 font-mono font-semibold">{o.order_number}</td>
+                      <tr key={o.id} className="hover:bg-zinc-950/60">
+                        <td className="px-3 py-2.5 font-mono font-semibold text-white">{o.order_number}</td>
                         <td className="px-3 py-2.5">
-                          <p className="font-semibold">{o.customer_name}</p>
-                          <p className="text-zinc-500">{o.customer_phone} · {o.country}</p>
+                          <p className="font-semibold text-white">{o.customer_name}</p>
+                          <p className="text-zinc-400">{o.customer_phone} · {o.country}</p>
                         </td>
-                        <td className="px-3 py-2.5 uppercase">
+                        <td className="px-3 py-2.5 uppercase text-zinc-300">
                           {o.payment_method} ({o.payment_status})
                         </td>
-                        <td className="px-3 py-2.5 font-mono tabular-nums font-semibold">{formatPrice(o.final_total)}</td>
-                        <td className="px-3 py-2.5 font-semibold text-[#9C7A16]">{o.order_status}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums font-semibold text-white">{formatPrice(o.final_total)}</td>
+                        <td className="px-3 py-2.5 font-semibold text-[#E4C76B]">{o.order_status}</td>
                         <td className="px-3 py-2.5 text-right">
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(o)}
-                            className="px-3 py-1 bg-zinc-950 text-white font-semibold"
+                            className="px-3 py-1 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
                           >
                             Inspect / Update
                           </button>
@@ -992,21 +995,21 @@ export function AdminDashboard() {
               </div>
 
               {selectedOrder && (
-                <div className="border-2 border-zinc-950 p-5 space-y-4 bg-zinc-50">
+                <div className="border-2 border-[#C9A227]/60 p-5 space-y-4 bg-zinc-950 text-zinc-100">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold font-mono">Manage Order {selectedOrder.order_number}</h3>
+                    <h3 className="text-sm font-semibold font-mono text-white">Manage Order {selectedOrder.order_number}</h3>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => window.print()} className="px-3 py-1 border border-zinc-400 flex items-center gap-1">
+                      <button type="button" onClick={() => window.print()} className="px-3 py-1 border border-zinc-700 hover:border-[#C9A227] text-zinc-200 flex items-center gap-1">
                         <Printer className="w-3.5 h-3.5" />
                         <span>Print Invoice</span>
                       </button>
-                      <button type="button" onClick={() => setSelectedOrder(null)} className="px-2 py-1 border">Close</button>
+                      <button type="button" onClick={() => setSelectedOrder(null)} className="px-2 py-1 border border-zinc-700 hover:border-zinc-500 text-zinc-200">Close</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="font-semibold">Delivery Address</p>
-                      <p className="text-zinc-600 mt-1">
+                      <p className="font-semibold text-white">Delivery Address</p>
+                      <p className="text-zinc-300 mt-1">
                         {[
                           selectedOrder.address.house_number,
                           selectedOrder.address.road_number,
@@ -1022,56 +1025,56 @@ export function AdminDashboard() {
                           .join(', ')}
                       </p>
                       {selectedOrder.transaction_id && (
-                        <p className="font-mono mt-1">Transaction ID: {selectedOrder.transaction_id}</p>
+                        <p className="font-mono text-[#E4C76B] mt-1">Transaction ID: {selectedOrder.transaction_id}</p>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block font-medium mb-1">Order Status</label>
+                        <label className="block font-medium text-zinc-300 mb-1">Order Status</label>
                         <select
                           value={selectedOrder.order_status}
                           onChange={(e) => setSelectedOrder({ ...selectedOrder, order_status: e.target.value as any })}
-                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                          className="w-full border border-zinc-700 bg-zinc-900 text-white px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                         >
                           {['Pending', 'Confirmed', 'Processing', 'Ready to Ship', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled', 'Returned', 'Refunded'].map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s} className="bg-zinc-950 text-white">{s}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block font-medium mb-1">Payment Status</label>
+                        <label className="block font-medium text-zinc-300 mb-1">Payment Status</label>
                         <select
                           value={selectedOrder.payment_status}
                           onChange={(e) => setSelectedOrder({ ...selectedOrder, payment_status: e.target.value as any })}
-                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                          className="w-full border border-zinc-700 bg-zinc-900 text-white px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                         >
                           {['pending', 'verified', 'paid', 'failed', 'refunded'].map((s) => (
-                            <option key={s} value={s}>{s}</option>
+                            <option key={s} value={s} className="bg-zinc-950 text-white">{s}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block font-medium mb-1">Courier Service</label>
+                        <label className="block font-medium text-zinc-300 mb-1">Courier Service</label>
                         <select
                           value={selectedOrder.courier_id ?? ''}
                           onChange={(e) =>
                             setSelectedOrder({ ...selectedOrder, courier_id: e.target.value ? Number(e.target.value) : null })
                           }
-                          className="w-full border border-zinc-300 bg-white px-2 py-1.5"
+                          className="w-full border border-zinc-700 bg-zinc-900 text-white px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                         >
-                          <option value="">Select Courier</option>
+                          <option value="" className="bg-zinc-950 text-white">Select Courier</option>
                           {shippingData.couriers.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
+                            <option key={c.id} value={c.id} className="bg-zinc-950 text-white">{c.name}</option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className="block font-medium mb-1">Tracking Number</label>
+                        <label className="block font-medium text-zinc-300 mb-1">Tracking Number</label>
                         <input
                           type="text"
                           value={selectedOrder.tracking_number}
                           onChange={(e) => setSelectedOrder({ ...selectedOrder, tracking_number: e.target.value })}
-                          className="w-full border border-zinc-300 bg-white px-2 py-1.5 font-mono"
+                          className="w-full border border-zinc-700 bg-zinc-900 text-white px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                         />
                       </div>
                     </div>
@@ -1089,7 +1092,7 @@ export function AdminDashboard() {
                         await loadAllAdminData();
                       }
                     }}
-                    className="px-5 py-2 bg-zinc-950 text-white font-semibold"
+                    className="px-5 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
                   >
                     Save Order Update
                   </button>
@@ -1100,11 +1103,11 @@ export function AdminDashboard() {
 
           {/* 6. CUSTOMERS */}
           {tab === 'customers' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
-              <h2 className="font-display text-2xl font-semibold">Customers ({customers.length})</h2>
-              <div className="overflow-x-auto">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4 text-xs">
+              <h2 className="font-display text-2xl font-semibold text-white">Customers ({customers.length})</h2>
+              <div className="overflow-x-auto border border-zinc-800">
                 <table className="w-full text-left">
-                  <thead className="bg-zinc-950 text-white">
+                  <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                     <tr>
                       <th className="px-3 py-2">Customer</th>
                       <th className="px-3 py-2">Contact</th>
@@ -1113,13 +1116,13 @@ export function AdminDashboard() {
                       <th className="px-3 py-2 text-right">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200">
+                  <tbody className="divide-y divide-zinc-800">
                     {customers.map((c) => (
-                      <tr key={c.id}>
-                        <td className="px-3 py-2.5 font-semibold">{c.name}</td>
-                        <td className="px-3 py-2.5">{c.email} · {c.phone}</td>
-                        <td className="px-3 py-2.5 font-mono">{c.order_count} orders · {formatPrice(c.total_spent)}</td>
-                        <td className="px-3 py-2.5 uppercase font-semibold">{c.status}</td>
+                      <tr key={c.id} className="hover:bg-zinc-950/60">
+                        <td className="px-3 py-2.5 font-semibold text-white">{c.name}</td>
+                        <td className="px-3 py-2.5 text-zinc-300">{c.email} · {c.phone}</td>
+                        <td className="px-3 py-2.5 font-mono text-zinc-200">{c.order_count} orders · {formatPrice(c.total_spent)}</td>
+                        <td className="px-3 py-2.5 uppercase font-semibold text-[#E4C76B]">{c.status}</td>
                         <td className="px-3 py-2.5 text-right">
                           <button
                             type="button"
@@ -1132,7 +1135,7 @@ export function AdminDashboard() {
                               });
                               await loadAllAdminData();
                             }}
-                            className="px-3 py-1 border border-zinc-300 hover:border-black"
+                            className="px-3 py-1 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white transition-colors"
                           >
                             {c.status === 'active' ? 'Suspend' : 'Activate'}
                           </button>
@@ -1148,12 +1151,12 @@ export function AdminDashboard() {
           {/* 7. SHIPPING & COURIERS */}
           {tab === 'shipping' && (
             <div className="space-y-6 text-xs">
-              <div className="bg-white border border-zinc-200 p-6 space-y-4">
-                <h2 className="font-display text-2xl font-semibold">Shipping Zones</h2>
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold text-white">Shipping Zones</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {shippingData.zones.map((z) => (
-                    <div key={z.id} className="border border-zinc-200 p-3 space-y-1">
-                      <div className="flex justify-between font-semibold">
+                    <div key={z.id} className="border border-zinc-800 bg-zinc-950 p-3 space-y-1">
+                      <div className="flex justify-between font-semibold text-white">
                         <span>{z.name}</span>
                         <button
                           type="button"
@@ -1164,14 +1167,14 @@ export function AdminDashboard() {
                             });
                             await loadAllAdminData();
                           }}
-                          className="text-red-600"
+                          className="text-red-400 hover:text-red-300"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <p className="text-zinc-600">{z.country} · {z.district} · {z.area}</p>
-                      <p className="font-mono">Fee: {formatPrice(z.base_fee)} · Free &gt; {formatPrice(z.free_shipping_threshold)}</p>
-                      <p className="text-zinc-500">{z.estimated_days}</p>
+                      <p className="text-zinc-300">{z.country} · {z.district} · {z.area}</p>
+                      <p className="font-mono text-[#E4C76B]">Fee: {formatPrice(z.base_fee)} · Free &gt; {formatPrice(z.free_shipping_threshold)}</p>
+                      <p className="text-zinc-400">{z.estimated_days}</p>
                     </div>
                   ))}
                 </div>
@@ -1186,24 +1189,24 @@ export function AdminDashboard() {
                     await loadAllAdminData();
                     showToast('Shipping zone added', 'success');
                   }}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-200"
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-800"
                 >
-                  <input type="text" required placeholder="Zone Name" value={newZone.name} onChange={(e) => setNewZone({ ...newZone, name: e.target.value })} className="border px-2 py-1.5" />
-                  <input type="text" required placeholder="Country" value={newZone.country} onChange={(e) => setNewZone({ ...newZone, country: e.target.value })} className="border px-2 py-1.5" />
-                  <input type="text" placeholder="District" value={newZone.district} onChange={(e) => setNewZone({ ...newZone, district: e.target.value })} className="border px-2 py-1.5" />
-                  <input type="number" step="0.01" placeholder="Fee USD" value={newZone.base_fee} onChange={(e) => setNewZone({ ...newZone, base_fee: Number(e.target.value) })} className="border px-2 py-1.5" />
-                  <input type="text" placeholder="Estimated Days" value={newZone.estimated_days} onChange={(e) => setNewZone({ ...newZone, estimated_days: e.target.value })} className="border px-2 py-1.5" />
-                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 text-white font-semibold">Add Zone</button>
+                  <input type="text" required placeholder="Zone Name" value={newZone.name} onChange={(e) => setNewZone({ ...newZone, name: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="text" required placeholder="Country" value={newZone.country} onChange={(e) => setNewZone({ ...newZone, country: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="text" placeholder="District" value={newZone.district} onChange={(e) => setNewZone({ ...newZone, district: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="number" step="0.01" placeholder="Fee USD" value={newZone.base_fee} onChange={(e) => setNewZone({ ...newZone, base_fee: Number(e.target.value) })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="text" placeholder="Estimated Days" value={newZone.estimated_days} onChange={(e) => setNewZone({ ...newZone, estimated_days: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <button type="submit" className="px-4 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold">Add Zone</button>
                 </form>
               </div>
 
-              <div className="bg-white border border-zinc-200 p-6 space-y-4">
-                <h2 className="font-display text-2xl font-semibold">Courier Services</h2>
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold text-white">Courier Services</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {shippingData.couriers.map((c) => (
-                    <div key={c.id} className="border border-zinc-200 p-3 space-y-1">
-                      <p className="font-semibold">{c.name}</p>
-                      <p className="text-zinc-600">{c.supported_regions} · Base {formatPrice(c.base_rate)}</p>
+                    <div key={c.id} className="border border-zinc-800 bg-zinc-950 p-3 space-y-1">
+                      <p className="font-semibold text-white">{c.name}</p>
+                      <p className="text-zinc-300">{c.supported_regions} · Base {formatPrice(c.base_rate)}</p>
                       <p className="font-mono text-[11px] text-zinc-400 truncate">{c.tracking_url_template}</p>
                     </div>
                   ))}
@@ -1219,12 +1222,12 @@ export function AdminDashboard() {
                     await loadAllAdminData();
                     showToast('Courier added', 'success');
                   }}
-                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-200"
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-zinc-800"
                 >
-                  <input type="text" required placeholder="Courier Name" value={newCourier.name} onChange={(e) => setNewCourier({ ...newCourier, name: e.target.value })} className="border px-2 py-1.5" />
-                  <input type="text" placeholder="Regions" value={newCourier.supported_regions} onChange={(e) => setNewCourier({ ...newCourier, supported_regions: e.target.value })} className="border px-2 py-1.5" />
-                  <input type="text" placeholder="Tracking URL Template" value={newCourier.tracking_url_template} onChange={(e) => setNewCourier({ ...newCourier, tracking_url_template: e.target.value })} className="border px-2 py-1.5" />
-                  <button type="submit" className="px-4 py-1.5 bg-zinc-950 text-white font-semibold">Add Courier</button>
+                  <input type="text" required placeholder="Courier Name" value={newCourier.name} onChange={(e) => setNewCourier({ ...newCourier, name: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="text" placeholder="Regions" value={newCourier.supported_regions} onChange={(e) => setNewCourier({ ...newCourier, supported_regions: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <input type="text" placeholder="Tracking URL Template" value={newCourier.tracking_url_template} onChange={(e) => setNewCourier({ ...newCourier, tracking_url_template: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none" />
+                  <button type="submit" className="px-4 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold">Add Courier</button>
                 </form>
               </div>
             </div>
@@ -1233,14 +1236,14 @@ export function AdminDashboard() {
           {/* 8. PAYMENTS */}
           {tab === 'payments' && (
             <div className="space-y-6 text-xs">
-              <div className="bg-white border border-zinc-200 p-6 space-y-4">
-                <h2 className="font-display text-2xl font-semibold">Payment Gateways (bKash, Nagad, COD, International)</h2>
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4">
+                <h2 className="font-display text-2xl font-semibold text-white">Payment Gateways (bKash, Nagad, COD, International)</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {paymentData.settings.map((gw) => (
-                    <div key={gw.gateway} className="border border-zinc-200 p-4 space-y-3">
+                    <div key={gw.gateway} className="border border-zinc-800 bg-zinc-950 p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">{gw.display_name}</span>
-                        <span className="font-mono text-[11px] text-emerald-700 font-semibold">
+                        <span className="font-semibold text-sm text-white">{gw.display_name}</span>
+                        <span className="font-mono text-[11px] text-emerald-400 font-semibold">
                           {gw.env_configured
                             ? 'Server API Active'
                             : gw.merchant_number
@@ -1248,8 +1251,8 @@ export function AdminDashboard() {
                             : 'TrxID Verification Active'}
                         </span>
                       </div>
-                      <div className="flex gap-4">
-                        <label className="flex items-center gap-1.5">
+                      <div className="flex gap-4 text-zinc-200">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={gw.is_enabled}
@@ -1261,10 +1264,11 @@ export function AdminDashboard() {
                                 ),
                               }))
                             }
+                            className="accent-[#C9A227]"
                           />
                           <span>Enabled</span>
                         </label>
-                        <label className="flex items-center gap-1.5">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={gw.sandbox_mode}
@@ -1276,6 +1280,7 @@ export function AdminDashboard() {
                                 ),
                               }))
                             }
+                            className="accent-[#C9A227]"
                           />
                           <span>Sandbox Mode</span>
                         </label>
@@ -1292,7 +1297,7 @@ export function AdminDashboard() {
                             ),
                           }))
                         }
-                        className="w-full border px-2 py-1.5 font-mono"
+                        className="w-full border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <textarea
                         rows={2}
@@ -1305,7 +1310,7 @@ export function AdminDashboard() {
                             ),
                           }))
                         }
-                        className="w-full border px-2 py-1.5"
+                        className="w-full border border-zinc-700 bg-zinc-900 text-white px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                       />
                       <button
                         type="button"
@@ -1318,7 +1323,7 @@ export function AdminDashboard() {
                           await refreshStore();
                           showToast(`${gw.display_name} saved`, 'success');
                         }}
-                        className="px-4 py-1.5 bg-zinc-950 text-white font-semibold"
+                        className="px-4 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
                       >
                         Save Gateway Settings
                       </button>
@@ -1327,11 +1332,11 @@ export function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="bg-white border border-zinc-200 p-6 space-y-3">
-                <h3 className="text-sm font-semibold">Payment & Verification Records</h3>
-                <div className="overflow-x-auto">
+              <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-3">
+                <h3 className="text-sm font-semibold text-white">Payment & Verification Records</h3>
+                <div className="overflow-x-auto border border-zinc-800">
                   <table className="w-full text-left">
-                    <thead className="bg-zinc-950 text-white">
+                    <thead className="bg-zinc-950 text-[#E4C76B] border-b border-zinc-800">
                       <tr>
                         <th className="px-3 py-2">Order</th>
                         <th className="px-3 py-2">Gateway</th>
@@ -1340,14 +1345,14 @@ export function AdminDashboard() {
                         <th className="px-3 py-2">Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200">
+                    <tbody className="divide-y divide-zinc-800">
                       {paymentData.records.map((r: any) => (
                         <tr key={r.id}>
-                          <td className="px-3 py-2 font-mono">{r.order_number}</td>
-                          <td className="px-3 py-2 uppercase">{r.gateway}</td>
-                          <td className="px-3 py-2 font-mono">{r.transaction_id || 'COD'}</td>
-                          <td className="px-3 py-2 font-mono">{formatPrice(r.amount)}</td>
-                          <td className="px-3 py-2 uppercase font-semibold">{r.status}</td>
+                          <td className="px-3 py-2 font-mono text-white">{r.order_number}</td>
+                          <td className="px-3 py-2 uppercase text-zinc-300">{r.gateway}</td>
+                          <td className="px-3 py-2 font-mono text-zinc-300">{r.transaction_id || 'COD'}</td>
+                          <td className="px-3 py-2 font-mono text-white">{formatPrice(r.amount)}</td>
+                          <td className="px-3 py-2 uppercase font-semibold text-[#E4C76B]">{r.status}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1359,8 +1364,8 @@ export function AdminDashboard() {
 
           {/* 9. COUPONS */}
           {tab === 'coupons' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-6 text-xs">
-              <h2 className="font-display text-2xl font-semibold">Coupons & Promotional Campaigns</h2>
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-6 text-xs">
+              <h2 className="font-display text-2xl font-semibold text-white">Coupons & Promotional Campaigns</h2>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -1377,25 +1382,25 @@ export function AdminDashboard() {
                 }}
                 className="grid grid-cols-2 sm:grid-cols-4 gap-3"
               >
-                <input type="text" required placeholder="Code (e.g. NEXA10)" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} className="border px-3 py-2 font-mono uppercase" />
-                <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon({ ...newCoupon, discount_type: e.target.value })} className="border px-3 py-2 bg-white">
-                  <option value="percentage">Percentage (%)</option>
-                  <option value="fixed">Fixed Amount ($)</option>
+                <input type="text" required placeholder="Code (e.g. NEXA10)" value={newCoupon.code} onChange={(e) => setNewCoupon({ ...newCoupon, code: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono uppercase focus:border-[#C9A227] focus:outline-none" />
+                <select value={newCoupon.discount_type} onChange={(e) => setNewCoupon({ ...newCoupon, discount_type: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none">
+                  <option value="percentage" className="bg-zinc-950 text-white">Percentage (%)</option>
+                  <option value="fixed" className="bg-zinc-950 text-white">Fixed Amount ($)</option>
                 </select>
-                <input type="number" required placeholder="Value" value={newCoupon.discount_value} onChange={(e) => setNewCoupon({ ...newCoupon, discount_value: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
-                <input type="number" placeholder="Min Order ($)" value={newCoupon.min_order_value} onChange={(e) => setNewCoupon({ ...newCoupon, min_order_value: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
-                <input type="number" placeholder="Max Uses" value={newCoupon.max_uses} onChange={(e) => setNewCoupon({ ...newCoupon, max_uses: Number(e.target.value) })} className="border px-3 py-2 font-mono" />
-                <input type="date" value={newCoupon.expires_at} onChange={(e) => setNewCoupon({ ...newCoupon, expires_at: e.target.value })} className="border px-3 py-2" />
-                <input type="text" placeholder="Campaign Name" value={newCoupon.campaign_name} onChange={(e) => setNewCoupon({ ...newCoupon, campaign_name: e.target.value })} className="border px-3 py-2" />
-                <button type="submit" className="bg-zinc-950 text-white font-semibold px-4 py-2">Create Coupon</button>
+                <input type="number" required placeholder="Value" value={newCoupon.discount_value} onChange={(e) => setNewCoupon({ ...newCoupon, discount_value: Number(e.target.value) })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
+                <input type="number" placeholder="Min Order ($)" value={newCoupon.min_order_value} onChange={(e) => setNewCoupon({ ...newCoupon, min_order_value: Number(e.target.value) })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
+                <input type="number" placeholder="Max Uses" value={newCoupon.max_uses} onChange={(e) => setNewCoupon({ ...newCoupon, max_uses: Number(e.target.value) })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
+                <input type="date" value={newCoupon.expires_at} onChange={(e) => setNewCoupon({ ...newCoupon, expires_at: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+                <input type="text" placeholder="Campaign Name" value={newCoupon.campaign_name} onChange={(e) => setNewCoupon({ ...newCoupon, campaign_name: e.target.value })} className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+                <button type="submit" className="bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold px-4 py-2 transition-colors">Create Coupon</button>
               </form>
 
               <div className="space-y-2">
                 {coupons.map((cp) => (
-                  <div key={cp.id} className="border border-zinc-200 p-3 flex items-center justify-between">
+                  <div key={cp.id} className="border border-zinc-800 bg-zinc-950 p-3 flex items-center justify-between">
                     <div>
-                      <span className="font-mono font-semibold text-sm">{cp.code}</span>
-                      <span className="ml-3 text-zinc-600">
+                      <span className="font-mono font-semibold text-sm text-[#E4C76B]">{cp.code}</span>
+                      <span className="ml-3 text-zinc-300">
                         {cp.discount_type === 'percentage' ? `${cp.discount_value}% off` : `$${cp.discount_value} off`} · Min ${cp.min_order_value} · Used {cp.used_count}/{cp.max_uses}
                       </span>
                     </div>
@@ -1408,7 +1413,7 @@ export function AdminDashboard() {
                         });
                         await loadAllAdminData();
                       }}
-                      className="text-red-600"
+                      className="text-red-400 hover:text-red-300"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1420,18 +1425,18 @@ export function AdminDashboard() {
 
           {/* 10. REVIEWS */}
           {tab === 'reviews' && (
-            <div className="bg-white border border-zinc-200 p-6 space-y-4 text-xs">
-              <h2 className="font-display text-2xl font-semibold">Reviews & Customer Questions ({reviews.length})</h2>
+            <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-4 text-xs">
+              <h2 className="font-display text-2xl font-semibold text-white">Reviews & Customer Questions ({reviews.length})</h2>
               {reviews.length === 0 ? (
-                <p className="text-zinc-500">No customer reviews or questions submitted yet.</p>
+                <p className="text-zinc-400">No customer reviews or questions submitted yet.</p>
               ) : (
                 reviews.map((r) => (
-                  <div key={r.id} className="border border-zinc-200 p-4 space-y-2">
+                  <div key={r.id} className="border border-zinc-800 bg-zinc-950 p-4 space-y-2">
                     <div className="flex justify-between">
-                      <span className="font-semibold">{r.author_name} on {r.product_name}</span>
-                      <span className="uppercase font-mono">{r.status}</span>
+                      <span className="font-semibold text-white">{r.author_name} on {r.product_name}</span>
+                      <span className="uppercase font-mono text-[#E4C76B]">{r.status}</span>
                     </div>
-                    <p>{r.comment || r.question}</p>
+                    <p className="text-zinc-200">{r.comment || r.question}</p>
                     <div className="flex flex-wrap gap-2 items-center">
                       <button
                         type="button"
@@ -1443,7 +1448,7 @@ export function AdminDashboard() {
                           });
                           await loadAllAdminData();
                         }}
-                        className="px-3 py-1 bg-zinc-950 text-white"
+                        className="px-3 py-1 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold"
                       >
                         Approve
                       </button>
@@ -1457,7 +1462,7 @@ export function AdminDashboard() {
                           });
                           await loadAllAdminData();
                         }}
-                        className="px-3 py-1 border border-zinc-300"
+                        className="px-3 py-1 border border-zinc-700 text-zinc-200 hover:border-red-400 hover:text-red-300"
                       >
                         Reject
                       </button>
@@ -1486,145 +1491,145 @@ export function AdminDashboard() {
                     showToast('Failed to save social links', 'error');
                   }
                 }}
-                className="bg-white border border-zinc-200 p-6 space-y-6"
+                className="bg-zinc-900 border border-zinc-800 p-6 space-y-6"
               >
                 <div>
-                  <h2 className="font-display text-2xl font-semibold">Official Social Media & Telegram Links</h2>
-                  <p className="text-zinc-500 mt-1">
-                    Update all five official SHOPNEXA social and customer support URLs shown in the website footer, homepage, and floating support widget.
+                  <h2 className="font-display text-2xl font-semibold text-white">Official Social Media & Telegram Links</h2>
+                  <p className="text-zinc-300 mt-1">
+                    Update all five official SHOPNEXA ROBI HUB social and customer support URLs shown in the website footer, homepage, and floating support widget.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-semibold mb-1">1. Facebook Page URL</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">1. Facebook Page URL</label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         required
                         value={siteForm.facebook_url}
                         onChange={(e) => setSiteForm({ ...siteForm, facebook_url: e.target.value })}
-                        className="flex-1 border px-3 py-2 font-mono"
+                        className="flex-1 border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <a
                         href={siteForm.facebook_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                        className="px-3 py-2 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white font-semibold"
                       >
                         Test
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">2. YouTube Channel URL</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">2. YouTube Channel URL</label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         required
                         value={siteForm.youtube_url}
                         onChange={(e) => setSiteForm({ ...siteForm, youtube_url: e.target.value })}
-                        className="flex-1 border px-3 py-2 font-mono"
+                        className="flex-1 border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <a
                         href={siteForm.youtube_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                        className="px-3 py-2 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white font-semibold"
                       >
                         Test
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">3. Telegram Channel URL</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">3. Telegram Channel URL</label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         required
                         value={siteForm.telegram_channel_url}
                         onChange={(e) => setSiteForm({ ...siteForm, telegram_channel_url: e.target.value })}
-                        className="flex-1 border px-3 py-2 font-mono"
+                        className="flex-1 border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <a
                         href={siteForm.telegram_channel_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                        className="px-3 py-2 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white font-semibold"
                       >
                         Test
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">4. Instagram Profile URL</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">4. Instagram Profile URL</label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         required
                         value={siteForm.instagram_url}
                         onChange={(e) => setSiteForm({ ...siteForm, instagram_url: e.target.value })}
-                        className="flex-1 border px-3 py-2 font-mono"
+                        className="flex-1 border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <a
                         href={siteForm.instagram_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                        className="px-3 py-2 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white font-semibold"
                       >
                         Test
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">5. Telegram Customer Support URL</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">5. Telegram Customer Support URL</label>
                     <div className="flex gap-2">
                       <input
                         type="url"
                         required
                         value={siteForm.telegram_support_url}
                         onChange={(e) => setSiteForm({ ...siteForm, telegram_support_url: e.target.value })}
-                        className="flex-1 border px-3 py-2 font-mono"
+                        className="flex-1 border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                       />
                       <a
                         href={siteForm.telegram_support_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 border border-zinc-300 hover:border-zinc-950 font-semibold"
+                        className="px-3 py-2 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white font-semibold"
                       >
                         Test
                       </a>
                     </div>
                   </div>
                   <div>
-                    <label className="block font-semibold mb-1">Telegram Support Handle</label>
+                    <label className="block font-semibold text-zinc-200 mb-1">Telegram Support Handle</label>
                     <input
                       type="text"
                       value={siteForm.telegram_support_username}
                       onChange={(e) => setSiteForm({ ...siteForm, telegram_support_username: e.target.value })}
-                      className="w-full border px-3 py-2 font-mono"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold mb-1">Floating Telegram Support Instructions</label>
+                  <label className="block font-semibold text-zinc-200 mb-1">Floating Telegram Support Instructions</label>
                   <textarea
                     rows={2}
                     value={siteForm.telegram_support_instructions}
                     onChange={(e) => setSiteForm({ ...siteForm, telegram_support_instructions: e.target.value })}
-                    className="w-full border px-3 py-2"
+                    className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                   />
                 </div>
 
-                <div className="border-t border-zinc-200 pt-4 space-y-3">
+                <div className="border-t border-zinc-800 pt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">Telegram Bot Server Alerts</h3>
-                    <span className="font-mono text-emerald-700 font-semibold">
+                    <h3 className="text-sm font-semibold text-white">Telegram Bot Server Alerts</h3>
+                    <span className="font-mono text-emerald-400 font-semibold">
                       {settings?.telegram_configured ? 'Bot Alerts Active' : 'Telegram Channel & Support Active'}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-4 text-zinc-200">
                     {(
                       [
                         ['new_order', 'New Order Alerts'],
@@ -1635,7 +1640,7 @@ export function AdminDashboard() {
                         ['support', 'Support Alerts'],
                       ] as const
                     ).map(([k, label]) => (
-                      <label key={k} className="flex items-center gap-1.5">
+                      <label key={k} className="flex items-center gap-1.5 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={siteForm.telegram_alerts[k]}
@@ -1645,6 +1650,7 @@ export function AdminDashboard() {
                               telegram_alerts: { ...siteForm.telegram_alerts, [k]: e.target.checked },
                             })
                           }
+                          className="accent-[#C9A227]"
                         />
                         <span>{label}</span>
                       </label>
@@ -1660,7 +1666,7 @@ export function AdminDashboard() {
                       const d = await res.json();
                       showToast(res.ok && d.sent ? 'Test alert sent to Telegram' : d.error || 'Telegram not configured', res.ok ? 'success' : 'error');
                     }}
-                    className="px-3 py-1.5 border border-zinc-300 inline-flex items-center gap-1.5"
+                    className="px-3 py-1.5 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] hover:text-white inline-flex items-center gap-1.5"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Send Test Telegram Alert</span>
@@ -1690,40 +1696,40 @@ export function AdminDashboard() {
                     showToast('Website & location settings saved', 'success');
                   }
                 }}
-                className="bg-white border border-zinc-200 p-6 space-y-6"
+                className="bg-zinc-900 border border-zinc-800 p-6 space-y-6"
               >
-                <h2 className="font-display text-2xl font-semibold">Website & Business Location Settings</h2>
+                <h2 className="font-display text-2xl font-semibold text-white">Website & Business Location Settings</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-medium mb-1">Brand Name</label>
-                    <input type="text" value={siteForm.brand_name} onChange={(e) => setSiteForm({ ...siteForm, brand_name: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Brand Name</label>
+                    <input type="text" value={siteForm.brand_name} onChange={(e) => setSiteForm({ ...siteForm, brand_name: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Main Headline / Tagline</label>
-                    <input type="text" value={siteForm.tagline} onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Main Headline / Tagline</label>
+                    <input type="text" value={siteForm.tagline} onChange={(e) => setSiteForm({ ...siteForm, tagline: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Logo Slogan</label>
-                    <input type="text" value={siteForm.logo_slogan || 'SHOP • DISCOVER • ENJOY'} onChange={(e) => setSiteForm({ ...siteForm, logo_slogan: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Logo Slogan</label>
+                    <input type="text" value={siteForm.logo_slogan || 'SHOP • DISCOVER • ENJOY'} onChange={(e) => setSiteForm({ ...siteForm, logo_slogan: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Hero Title</label>
-                    <input type="text" value={siteForm.hero_title} onChange={(e) => setSiteForm({ ...siteForm, hero_title: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Hero Title</label>
+                    <input type="text" value={siteForm.hero_title} onChange={(e) => setSiteForm({ ...siteForm, hero_title: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Promo Banner Text</label>
-                    <input type="text" value={siteForm.promo_banner_text} onChange={(e) => setSiteForm({ ...siteForm, promo_banner_text: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Promo Banner Text</label>
+                    <input type="text" value={siteForm.promo_banner_text} onChange={(e) => setSiteForm({ ...siteForm, promo_banner_text: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Contact Email</label>
-                    <input type="email" value={siteForm.contact_email} onChange={(e) => setSiteForm({ ...siteForm, contact_email: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Contact Email</label>
+                    <input type="email" value={siteForm.contact_email} onChange={(e) => setSiteForm({ ...siteForm, contact_email: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Business Location / Address</label>
-                    <input type="text" value={siteForm.business_address} onChange={(e) => setSiteForm({ ...siteForm, business_address: e.target.value })} className="w-full border px-3 py-2" />
+                    <label className="block font-medium text-zinc-300 mb-1">Business Location / Address</label>
+                    <input type="text" value={siteForm.business_address} onChange={(e) => setSiteForm({ ...siteForm, business_address: e.target.value })} className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">Customer App Download Visibility</label>
+                    <label className="block font-medium text-zinc-300 mb-1">Customer App Download Visibility</label>
                     <select
                       value={siteForm.customer_download_buyers_only === false ? 'public' : 'buyers_only'}
                       onChange={(e) =>
@@ -1732,15 +1738,25 @@ export function AdminDashboard() {
                           customer_download_buyers_only: e.target.value !== 'public',
                         })
                       }
-                      className="w-full border px-3 py-2 bg-white"
+                      className="w-full border border-zinc-700 px-3 py-2 bg-zinc-950 text-white focus:border-[#C9A227] focus:outline-none"
                     >
-                      <option value="buyers_only">Buyers Only (Visible only after product purchase)</option>
-                      <option value="public">Public (Visible to all storefront visitors)</option>
+                      <option value="buyers_only" className="bg-zinc-950 text-white">Buyers Only (Visible only after product purchase)</option>
+                      <option value="public" className="bg-zinc-950 text-white">Public (Visible to all storefront visitors)</option>
                     </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-medium text-zinc-300 mb-1">Android APK Download URL (Optional)</label>
+                    <input
+                      type="text"
+                      value={siteForm.android_apk_url || ''}
+                      onChange={(e) => setSiteForm({ ...siteForm, android_apk_url: e.target.value })}
+                      placeholder="https://... or /shopnexa-robi-hub.apk (leave blank to use Chrome PWA / WebAPK install)"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
+                    />
                   </div>
                 </div>
 
-                <button type="submit" className="px-6 py-2.5 bg-zinc-950 text-white font-semibold">
+                <button type="submit" className="px-6 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors">
                   Save Website Settings
                 </button>
               </form>
@@ -1766,63 +1782,87 @@ export function AdminDashboard() {
                     setCredBusy(false);
                   }
                 }}
-                className="bg-white border border-zinc-200 p-6 space-y-4"
+                className="bg-zinc-900 border border-zinc-800 p-6 space-y-4"
               >
-                <h3 className="text-sm font-semibold">Administrator Credentials & Hidden Verification Gmail</h3>
+                <h3 className="text-sm font-semibold text-white">Administrator Credentials & Hidden Verification Gmail</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block font-medium mb-1">Current Password *</label>
+                    <label className="block font-medium text-zinc-300 mb-1">Current Password *</label>
                     <input
                       type="password"
                       required
                       value={credForm.currentPasscode}
                       onChange={(e) => setCredForm({ ...credForm, currentPasscode: e.target.value })}
-                      className="w-full border px-3 py-2"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">New Admin Name (Optional)</label>
+                    <label className="block font-medium text-zinc-300 mb-1">New Admin Name (Optional)</label>
                     <input
                       type="text"
                       value={credForm.newUsername}
                       onChange={(e) => setCredForm({ ...credForm, newUsername: e.target.value })}
                       placeholder="Leave blank to keep current"
-                      className="w-full border px-3 py-2"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">New Password (Optional, min 6)</label>
+                    <label className="block font-medium text-zinc-300 mb-1">New Password (Optional, min 6)</label>
                     <input
                       type="password"
                       minLength={6}
                       value={credForm.newPasscode}
                       onChange={(e) => setCredForm({ ...credForm, newPasscode: e.target.value })}
                       placeholder="Leave blank to keep current"
-                      className="w-full border px-3 py-2"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium mb-1">New Verification Gmail (Hidden)</label>
+                    <label className="block font-medium text-zinc-300 mb-1">New Verification Gmail (Hidden)</label>
                     <input
                       type="password"
                       autoComplete="off"
                       value={credForm.newGmail}
                       onChange={(e) => setCredForm({ ...credForm, newGmail: e.target.value })}
                       placeholder="Leave blank to keep hidden Gmail"
-                      className="w-full border px-3 py-2"
+                      className="w-full border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                     />
                   </div>
                 </div>
-                <button type="submit" disabled={credBusy} className="px-5 py-2 bg-zinc-950 text-white font-semibold">
+                <button type="submit" disabled={credBusy} className="px-5 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors">
                   {credBusy ? 'Updating...' : 'Update Admin Credentials'}
                 </button>
               </form>
 
-              <div className="bg-white border border-zinc-200 p-6 flex flex-wrap items-center justify-between gap-4">
+              <div className="bg-black text-white border border-[#C9A227]/50 p-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <img
+                    src="/pwa-192x192.png"
+                    alt="SHOPNEXA ROBI HUB App Icon"
+                    className="w-14 h-14 rounded-2xl border border-[#C9A227]/80 shadow-lg shrink-0 object-cover"
+                  />
+                  <div>
+                    <p className="text-[11px] font-semibold tracking-[0.2em] text-[#E4C76B]">
+                      INSTALLABLE MOBILE & DESKTOP APP
+                    </p>
+                    <h3 className="font-display text-xl font-semibold text-white mt-0.5">
+                      SHOPNEXA ROBI HUB App
+                    </h3>
+                    <p className="text-zinc-300 mt-0.5">
+                      Install SHOPNEXA ROBI HUB with its custom metallic gold app icon directly on your phone or desktop.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <PWAInstallButton variant="banner" label="Download SHOPNEXA ROBI HUB App" />
+                </div>
+              </div>
+
+              <div className="bg-zinc-900 border border-zinc-800 p-6 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-sm font-semibold">Complete Website A-to-Z Archive & Database Backup</h3>
-                  <p className="text-zinc-500 mt-0.5">
-                    Download the complete SHOPNEXA website package (all code, media, products, orders, settings & SQLite database) or the standalone database file.
+                  <h3 className="text-sm font-semibold text-white">Complete Website A-to-Z Archive & Database Backup</h3>
+                  <p className="text-zinc-300 mt-0.5">
+                    Download the complete SHOPNEXA ROBI HUB website package (all code, media, products, orders, settings & SQLite database) or the standalone database file.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2.5">
@@ -1838,7 +1878,7 @@ export function AdminDashboard() {
                   <button
                     type="button"
                     onClick={() => void handleDownloadBackup()}
-                    className="px-4 py-2 border border-zinc-950 text-zinc-950 hover:bg-zinc-950 hover:text-white font-semibold flex items-center gap-2 transition-colors"
+                    className="px-4 py-2 border border-zinc-700 text-zinc-100 hover:border-[#C9A227] hover:text-[#E4C76B] font-semibold flex items-center gap-2 transition-colors"
                   >
                     <Download className="w-4 h-4" />
                     <span>Download Database (.db)</span>
@@ -1847,10 +1887,10 @@ export function AdminDashboard() {
               </div>
 
               {errorLogs.length > 0 && (
-                <div className="bg-white border border-zinc-200 p-6 space-y-2">
-                  <h3 className="text-sm font-semibold">Recent Server Error Logs</h3>
+                <div className="bg-zinc-900 border border-zinc-800 p-6 space-y-2">
+                  <h3 className="text-sm font-semibold text-white">Recent Server Error Logs</h3>
                   {errorLogs.slice(0, 10).map((l: any) => (
-                    <div key={l.id} className="font-mono text-[11px] text-red-700 border-b pb-1">
+                    <div key={l.id} className="font-mono text-[11px] text-red-400 border-b border-zinc-800 pb-1">
                       [{l.created_at}] {l.route}: {l.message}
                     </div>
                   ))}

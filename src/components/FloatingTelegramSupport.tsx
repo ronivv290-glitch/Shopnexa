@@ -18,7 +18,7 @@ export function FloatingTelegramSupport() {
         <div className="w-72 sm:w-80 bg-zinc-950 text-white border border-[#C9A227]/40 shadow-2xl p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-xs font-semibold text-[#E4C76B]">SHOPNEXA Customer Support</p>
+              <p className="text-xs font-semibold text-[#E4C76B]">SHOPNEXA ROBI HUB Customer Support</p>
               <p className="text-xs font-mono text-zinc-300 mt-0.5">{supportUser}</p>
             </div>
             <button

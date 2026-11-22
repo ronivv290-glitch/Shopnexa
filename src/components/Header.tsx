@@ -29,7 +29,6 @@ export function Header() {
     wishlistIds,
     user,
     adminToken,
-    canShowCustomerDownload,
     isBuyerAppMode,
   } = useStore();
 
@@ -94,20 +93,22 @@ export function Header() {
             {settings?.logo_url ? (
               <img
                 src={settings.logo_url}
-                alt={settings.brand_name || 'SHOPNEXA'}
+                alt={settings.brand_name || 'SHOPNEXA ROBI HUB'}
                 className="h-8 w-auto object-contain"
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="inline-flex items-center justify-center w-8 h-8 border border-[#C9A227] text-[#E4C76B] font-display font-bold text-lg">
-                S
-              </span>
+              <img
+                src="/pwa-192x192.png"
+                alt={settings?.brand_name || 'SHOPNEXA ROBI HUB'}
+                className="w-9 h-9 rounded-lg border border-[#C9A227]/60 object-cover shrink-0"
+              />
             )}
-            <div className="flex flex-col leading-none">
-              <span className="font-display text-xl sm:text-2xl font-semibold tracking-[0.14em] text-white leading-none">
-                {settings?.brand_name || 'SHOPNEXA'}
+            <div className="flex flex-col leading-none min-w-0">
+              <span className="font-display text-sm sm:text-xl font-semibold tracking-[0.06em] sm:tracking-[0.12em] text-white leading-none truncate max-w-[140px] sm:max-w-none">
+                {settings?.brand_name || 'SHOPNEXA ROBI HUB'}
               </span>
-              <span className="text-[9px] font-semibold tracking-[0.22em] text-[#E4C76B] mt-1">
+              <span className="text-[8px] sm:text-[9px] font-semibold tracking-[0.16em] sm:tracking-[0.22em] text-[#E4C76B] mt-1 truncate max-w-[140px] sm:max-w-none">
                 {settings?.logo_slogan || 'SHOP • DISCOVER • ENJOY'}
               </span>
             </div>
@@ -318,7 +319,7 @@ export function Header() {
           <button
             type="button"
             onClick={() => setCartOpen(true)}
-            className="relative flex items-center gap-1.5 px-3 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
+            className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold transition-colors whitespace-nowrap shrink-0"
             aria-label="Shopping Cart"
           >
             <ShoppingBag className="w-4 h-4" />
@@ -326,11 +327,7 @@ export function Header() {
             <span className="font-mono tabular-nums font-bold">({totalCartQty})</span>
           </button>
 
-          {canShowCustomerDownload && (
-            <div className="hidden md:block">
-              <PWAInstallButton variant="header" label="Download App" />
-            </div>
-          )}
+          <PWAInstallButton variant="header" label="Download App" shortMobileLabel="App" />
         </div>
       </div>
 
@@ -450,7 +447,7 @@ export function Header() {
                   {t(language, 'admin')}
                 </button>
               )}
-              {canShowCustomerDownload && <PWAInstallButton variant="header" label="Download App" />}
+              <PWAInstallButton variant="header" label="Download App" />
             </div>
           </div>
         </div>

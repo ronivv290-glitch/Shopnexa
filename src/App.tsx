@@ -31,8 +31,8 @@ function StorefrontShell() {
   if (loading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center gap-3">
-        <span className="font-display text-4xl font-semibold tracking-[0.2em] text-[#E4C76B]">
-          SHOPNEXA
+        <span className="font-display text-3xl sm:text-4xl font-semibold tracking-[0.2em] text-[#E4C76B] text-center px-4">
+          SHOPNEXA ROBI HUB
         </span>
         <p className="text-xs tracking-[0.25em] text-zinc-400">THE FUTURE OF SHOPPING</p>
       </div>
@@ -40,7 +40,7 @@ function StorefrontShell() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-zinc-950">
+    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
       <Header />
 
       <main className="flex-1">

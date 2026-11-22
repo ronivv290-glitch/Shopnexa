@@ -51,12 +51,12 @@ export function CartDrawer() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-[2px]">
-      <div className="w-full max-w-md bg-white text-zinc-950 h-full flex flex-col shadow-2xl border-l border-zinc-200">
-        <div className="px-6 py-4 bg-zinc-950 text-white flex items-center justify-between border-b border-[#C9A227]/30">
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-[2px]">
+      <div className="w-full max-w-md bg-zinc-950 text-zinc-100 h-full flex flex-col shadow-2xl border-l border-[#C9A227]/35">
+        <div className="px-6 py-4 bg-black text-white flex items-center justify-between border-b border-[#C9A227]/30">
           <div className="flex items-center gap-2.5">
             <ShoppingBag className="w-4 h-4 text-[#E4C76B]" />
-            <h2 className="font-display text-xl font-semibold tracking-wide">Shopping Bag</h2>
+            <h2 className="font-display text-xl font-semibold tracking-wide text-white">Shopping Bag</h2>
           </div>
           <button
             type="button"
@@ -71,15 +71,15 @@ export function CartDrawer() {
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {cart.length === 0 ? (
             <div className="text-center py-16 space-y-4">
-              <ShoppingBag className="w-10 h-10 mx-auto text-zinc-300" />
-              <p className="text-sm text-zinc-600">Your SHOPNEXA bag is currently empty.</p>
+              <ShoppingBag className="w-10 h-10 mx-auto text-zinc-600" />
+              <p className="text-sm text-zinc-300">Your SHOPNEXA ROBI HUB bag is currently empty.</p>
               <button
                 type="button"
                 onClick={() => {
                   setCartOpen(false);
                   navigate({ page: 'shop', filter: 'own' });
                 }}
-                className="px-5 py-2.5 bg-zinc-950 text-white text-xs font-semibold hover:bg-[#C9A227] hover:text-black transition-colors"
+                className="px-5 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold transition-colors"
               >
                 Browse Direct Products
               </button>
@@ -97,36 +97,36 @@ export function CartDrawer() {
                 item.product.images[0];
 
               return (
-                <div key={item.id} className="flex gap-4 pb-5 border-b border-zinc-100">
-                  <div className="w-20 h-20 bg-zinc-100 shrink-0 overflow-hidden">
+                <div key={item.id} className="flex gap-4 pb-5 border-b border-zinc-800">
+                  <div className="w-20 h-20 bg-white border border-zinc-700 shrink-0 overflow-hidden">
                     <SmartImage src={img} alt={item.product.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-zinc-950 line-clamp-2">{item.product.name}</h3>
+                      <h3 className="text-sm font-semibold text-white line-clamp-2">{item.product.name}</h3>
                       <button
                         type="button"
                         onClick={() => removeFromCart(item.id)}
                         aria-label="Remove item"
-                        className="text-zinc-400 hover:text-red-600 shrink-0"
+                        className="text-zinc-400 hover:text-red-400 shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                    <div className="mt-1 text-xs text-zinc-500 space-x-2">
+                    <div className="mt-1 text-xs text-zinc-400 space-x-2">
                       {item.selected_color && <span>Color: {item.selected_color.name}</span>}
                       {item.selected_size && <span>· Size: {item.selected_size.label}</span>}
                       {item.selected_variation && <span>· {item.selected_variation.variant_name}</span>}
                     </div>
 
                     <div className="mt-3 flex items-center justify-between">
-                      <div className="flex items-center border border-zinc-300">
+                      <div className="flex items-center border border-zinc-700 bg-zinc-900 text-white">
                         <button
                           type="button"
                           onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                           aria-label="Decrease quantity"
-                          className="p-1.5 hover:bg-zinc-100"
+                          className="p-1.5 hover:bg-zinc-800"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -135,12 +135,12 @@ export function CartDrawer() {
                           type="button"
                           onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                           aria-label="Increase quantity"
-                          className="p-1.5 hover:bg-zinc-100"
+                          className="p-1.5 hover:bg-zinc-800"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
-                      <span className="text-sm font-semibold font-mono tabular-nums">
+                      <span className="text-sm font-semibold font-mono tabular-nums text-[#E4C76B]">
                         {formatPrice(unitPrice * item.quantity)}
                       </span>
                     </div>
@@ -152,7 +152,7 @@ export function CartDrawer() {
         </div>
 
         {cart.length > 0 && (
-          <div className="p-6 bg-zinc-50 border-t border-zinc-200 space-y-4">
+          <div className="p-6 bg-zinc-900 border-t border-zinc-800 space-y-4">
             <form onSubmit={handleApplyCoupon} className="flex gap-2">
               <div className="relative flex-1">
                 <Tag className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -161,39 +161,39 @@ export function CartDrawer() {
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value)}
                   placeholder="Promo / Coupon code"
-                  className="w-full bg-white border border-zinc-300 pl-8 pr-3 py-2 text-xs focus:border-black focus:outline-none"
+                  className="w-full bg-zinc-950 border border-zinc-700 text-white placeholder:text-zinc-400 pl-8 pr-3 py-2 text-xs focus:border-[#C9A227] focus:outline-none"
                 />
               </div>
               <button
                 type="submit"
-                className="px-4 py-2 bg-zinc-900 text-white text-xs font-semibold hover:bg-zinc-800"
+                className="px-4 py-2 bg-zinc-800 border border-zinc-700 hover:border-[#C9A227] text-white text-xs font-semibold transition-colors"
               >
                 Apply
               </button>
             </form>
-            {couponError && <p className="text-xs text-red-600">{couponError}</p>}
+            {couponError && <p className="text-xs text-red-400">{couponError}</p>}
             {appliedDiscount && (
-              <p className="text-xs text-emerald-700 font-medium">
+              <p className="text-xs text-emerald-400 font-medium">
                 Coupon {appliedDiscount.code} applied (-{formatPrice(appliedDiscount.amount)})
               </p>
             )}
 
             <div className="space-y-1.5 text-xs">
-              <div className="flex justify-between text-zinc-600">
+              <div className="flex justify-between text-zinc-300">
                 <span>Subtotal</span>
                 <span className="font-mono tabular-nums">{formatPrice(subtotal)}</span>
               </div>
               {discountAmount > 0 && (
-                <div className="flex justify-between text-emerald-700">
+                <div className="flex justify-between text-emerald-400">
                   <span>Discount</span>
                   <span className="font-mono tabular-nums">-{formatPrice(discountAmount)}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm font-semibold text-zinc-950 pt-2 border-t border-zinc-200">
+              <div className="flex justify-between text-sm font-semibold text-white pt-2 border-t border-zinc-800">
                 <span>Estimated Total</span>
-                <span className="font-mono tabular-nums">{formatPrice(estimatedTotal)}</span>
+                <span className="font-mono tabular-nums text-[#E4C76B]">{formatPrice(estimatedTotal)}</span>
               </div>
-              <p className="text-[11px] text-zinc-500">Shipping calculated by country & district at checkout.</p>
+              <p className="text-[11px] text-zinc-400">Shipping calculated by country & district at checkout.</p>
             </div>
 
             <button
@@ -202,7 +202,7 @@ export function CartDrawer() {
                 setCartOpen(false);
                 navigate({ page: 'checkout' });
               }}
-              className="w-full py-3 bg-zinc-950 hover:bg-[#C9A227] text-white hover:text-black text-xs font-semibold tracking-wide flex items-center justify-center gap-2 transition-colors"
+              className="w-full py-3 bg-[#C9A227] hover:bg-[#E4C76B] text-black text-xs font-semibold tracking-wide flex items-center justify-center gap-2 transition-colors"
             >
               <span>Proceed to Checkout</span>
               <ArrowRight className="w-4 h-4" />

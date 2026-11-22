@@ -15,8 +15,8 @@ export default defineConfig(() => {
         includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
         manifest: {
           id: '/',
-          name: 'SHOPNEXA – THE FUTURE OF SHOPPING',
-          short_name: 'SHOPNEXA',
+          name: 'SHOPNEXA ROBI HUB – THE FUTURE OF SHOPPING',
+          short_name: 'SHOPNEXA ROBI HUB',
           description: 'SHOP • DISCOVER • ENJOY — Direct luxury shopping & global marketplace.',
           theme_color: '#09090B',
           background_color: '#09090B',

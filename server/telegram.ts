@@ -30,7 +30,7 @@ export async function sendTelegramAlert(type: TelegramAlertType, message: string
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: chatId,
-        text: `SHOPNEXA Alert\n${message}`,
+        text: `SHOPNEXA ROBI HUB Alert\n${message}`,
         disable_web_page_preview: true,
       }),
     });

@@ -503,13 +503,13 @@ export function recalculateProductRating(productId: number): void {
 }
 
 const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  brand_name: 'SHOPNEXA',
+  brand_name: 'SHOPNEXA ROBI HUB',
   tagline: 'THE FUTURE OF SHOPPING 🛍️',
   logo_slogan: 'SHOP • DISCOVER • ENJOY',
   logo_url: '',
   hero_title: 'Curated Luxury, Direct & Global Discovery',
   hero_subtitle:
-    'A global shopping destination uniting direct-from-vault SHOPNEXA editions with verified international partner collections.',
+    'A global shopping destination uniting direct-from-vault SHOPNEXA ROBI HUB editions with verified international partner collections.',
   hero_cta_text: 'Explore Collection',
   hero_image: '/src/assets/images/hero_shopnexa_luxury_1795308770793.jpg',
   promo_banner_text: '',
@@ -532,26 +532,27 @@ const DEFAULT_SITE_SETTINGS: SiteSettings = {
     order_status: true,
     support: true,
   },
-  seo_title: 'SHOPNEXA – THE FUTURE OF SHOPPING',
+  seo_title: 'SHOPNEXA ROBI HUB – THE FUTURE OF SHOPPING',
   seo_description:
-    'Shop direct luxury goods and verified international affiliate discoveries on SHOPNEXA.',
-  seo_keywords: 'SHOPNEXA, luxury e-commerce, Bangladesh online shopping, bKash, Nagad, global marketplace',
+    'Shop direct luxury goods and verified international affiliate discoveries on SHOPNEXA ROBI HUB.',
+  seo_keywords: 'SHOPNEXA ROBI HUB, luxury e-commerce, Bangladesh online shopping, bKash, Nagad, global marketplace',
   about_story:
-    'SHOPNEXA bridges curated direct-selling craftsmanship with global marketplace discovery. Direct items ship from verified inventory with localized checkout, while affiliate partner items connect you directly to official merchant checkout.',
+    'SHOPNEXA ROBI HUB bridges curated direct-selling craftsmanship with global marketplace discovery. Direct items ship from verified inventory with localized checkout, while affiliate partner items connect you directly to official merchant checkout.',
   shipping_policy:
     'Orders inside Dhaka arrive within 24–48 hours; nationwide Bangladesh deliveries arrive in 2–5 business days. International express delivery spans 5–12 business days depending on destination.',
   return_policy:
-    'Unused direct SHOPNEXA items in original packaging are eligible for return or exchange within 7 days of delivery.',
+    'Unused direct SHOPNEXA ROBI HUB items in original packaging are eligible for return or exchange within 7 days of delivery.',
   refund_policy:
     'Verified refunds for bKash, Nagad, and card orders are processed back to the original payment method within 3–7 business days after inspection.',
   privacy_policy:
-    'Customer addresses, contact numbers, and order records are encrypted in transit and never sold to third parties. Payment PINs and OTPs are never collected by SHOPNEXA.',
+    'Customer addresses, contact numbers, and order records are encrypted in transit and never sold to third parties. Payment PINs and OTPs are never collected by SHOPNEXA ROBI HUB.',
   terms_conditions:
-    'Direct SHOPNEXA purchases are fulfilled under SHOPNEXA warranty. Affiliate items redirect to AliExpress and are governed by AliExpress merchant terms and buyer protection.',
+    'Direct SHOPNEXA ROBI HUB purchases are fulfilled under SHOPNEXA ROBI HUB warranty. Affiliate items redirect to AliExpress and are governed by AliExpress merchant terms and buyer protection.',
   affiliate_disclosure:
-    'Affiliate Disclosure: Items marked Affiliate Partner redirect via tracked links to AliExpress. SHOPNEXA may earn a commission at no additional cost to you. AliExpress handles payment, fulfillment, and buyer protection for affiliate purchases.',
+    'Affiliate Disclosure: Items marked Affiliate Partner redirect via tracked links to AliExpress. SHOPNEXA ROBI HUB may earn a commission at no additional cost to you. AliExpress handles payment, fulfillment, and buyer protection for affiliate purchases.',
   email_notifications_enabled: true,
   customer_download_buyers_only: true,
+  android_apk_url: '',
 };
 
 export function getSiteSettings(): SiteSettings {
@@ -776,6 +777,9 @@ function seedInitialData(): void {
     try {
       const parsed = JSON.parse(existingSettings.value_json);
       const patch: Partial<SiteSettings> = {};
+      if (!parsed.brand_name || parsed.brand_name === 'SHOPNEXA') {
+        patch.brand_name = 'SHOPNEXA ROBI HUB';
+      }
       if (parsed.business_address === 'Gulshan Avenue, Dhaka 1212, Bangladesh · Global Fulfillment') {
         patch.business_address = 'Rangpur, Bangladesh · Global Fulfillment';
       }
@@ -785,8 +789,36 @@ function seedInitialData(): void {
       if (!parsed.logo_slogan) {
         patch.logo_slogan = 'SHOP • DISCOVER • ENJOY';
       }
-      if (!parsed.seo_title || parsed.seo_title === 'SHOPNEXA — The Future of Shopping | Global Hybrid Marketplace') {
-        patch.seo_title = 'SHOPNEXA – THE FUTURE OF SHOPPING';
+      if (
+        !parsed.seo_title ||
+        parsed.seo_title === 'SHOPNEXA — The Future of Shopping | Global Hybrid Marketplace' ||
+        parsed.seo_title === 'SHOPNEXA – THE FUTURE OF SHOPPING'
+      ) {
+        patch.seo_title = 'SHOPNEXA ROBI HUB – THE FUTURE OF SHOPPING';
+      }
+      if (typeof parsed.hero_subtitle === 'string' && parsed.hero_subtitle.includes('SHOPNEXA editions')) {
+        patch.hero_subtitle = DEFAULT_SITE_SETTINGS.hero_subtitle;
+      }
+      if (typeof parsed.seo_description === 'string' && parsed.seo_description.endsWith('on SHOPNEXA.')) {
+        patch.seo_description = DEFAULT_SITE_SETTINGS.seo_description;
+      }
+      if (typeof parsed.seo_keywords === 'string' && parsed.seo_keywords.startsWith('SHOPNEXA,')) {
+        patch.seo_keywords = DEFAULT_SITE_SETTINGS.seo_keywords;
+      }
+      if (typeof parsed.about_story === 'string' && parsed.about_story.startsWith('SHOPNEXA bridges')) {
+        patch.about_story = DEFAULT_SITE_SETTINGS.about_story;
+      }
+      if (typeof parsed.return_policy === 'string' && parsed.return_policy.includes('direct SHOPNEXA items')) {
+        patch.return_policy = DEFAULT_SITE_SETTINGS.return_policy;
+      }
+      if (typeof parsed.privacy_policy === 'string' && parsed.privacy_policy.endsWith('by SHOPNEXA.')) {
+        patch.privacy_policy = DEFAULT_SITE_SETTINGS.privacy_policy;
+      }
+      if (typeof parsed.terms_conditions === 'string' && parsed.terms_conditions.includes('Direct SHOPNEXA purchases')) {
+        patch.terms_conditions = DEFAULT_SITE_SETTINGS.terms_conditions;
+      }
+      if (typeof parsed.affiliate_disclosure === 'string' && parsed.affiliate_disclosure.includes('SHOPNEXA may earn')) {
+        patch.affiliate_disclosure = DEFAULT_SITE_SETTINGS.affiliate_disclosure;
       }
       if (parsed.promo_banner_text === 'Worldwide Express Delivery · Direct bKash, Nagad & COD in Bangladesh') {
         patch.promo_banner_text = '';
@@ -824,8 +856,12 @@ function seedInitialData(): void {
       `INSERT INTO categories (name, slug, description, image_url, sort_order, is_featured) VALUES (?, ?, ?, ?, ?, ?)`
     );
     initialCategories.forEach((c, idx) => {
-      insertCat.run(c.name, c.slug, `Curated ${c.name} collection on SHOPNEXA.`, c.img, idx + 1, c.featured);
+      insertCat.run(c.name, c.slug, `Curated ${c.name} collection on SHOPNEXA ROBI HUB.`, c.img, idx + 1, c.featured);
     });
+  } else {
+    db.prepare(
+      `UPDATE categories SET description = REPLACE(description, 'on SHOPNEXA.', 'on SHOPNEXA ROBI HUB.') WHERE description LIKE '%on SHOPNEXA.%'`
+    ).run();
   }
 
   const payCount = (db.prepare(`SELECT COUNT(*) AS cnt FROM payment_settings`).get() as { cnt: number }).cnt;
@@ -837,7 +873,7 @@ function seedInitialData(): void {
       'bkash',
       1,
       'bKash Send Money',
-      'Send Money via bKash to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA never collects your bKash PIN or OTP.',
+      'Send Money via bKash to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA ROBI HUB never collects your bKash PIN or OTP.',
       '01704323915',
       1
     );
@@ -845,7 +881,7 @@ function seedInitialData(): void {
       'nagad',
       1,
       'Nagad Send Money',
-      'Send Money via Nagad to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA never collects your Nagad PIN or OTP.',
+      'Send Money via Nagad to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA ROBI HUB never collects your Nagad PIN or OTP.',
       '01704323915',
       1
     );
@@ -870,15 +906,15 @@ function seedInitialData(): void {
       `UPDATE payment_settings
        SET display_name = 'bKash Send Money',
            merchant_number = '01704323915',
-           instructions = 'Send Money via bKash to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA never collects your bKash PIN or OTP.'
-       WHERE gateway = 'bkash' AND (merchant_number IS NULL OR merchant_number = '')`
+           instructions = 'Send Money via bKash to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA ROBI HUB never collects your bKash PIN or OTP.'
+       WHERE gateway = 'bkash' AND (merchant_number IS NULL OR merchant_number = '' OR instructions LIKE '%SHOPNEXA never%')`
     ).run();
     db.prepare(
       `UPDATE payment_settings
        SET display_name = 'Nagad Send Money',
            merchant_number = '01704323915',
-           instructions = 'Send Money via Nagad to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA never collects your Nagad PIN or OTP.'
-       WHERE gateway = 'nagad' AND (merchant_number IS NULL OR merchant_number = '')`
+           instructions = 'Send Money via Nagad to 01704323915 and enter your Transaction ID (TrxID) below. SHOPNEXA ROBI HUB never collects your Nagad PIN or OTP.'
+       WHERE gateway = 'nagad' AND (merchant_number IS NULL OR merchant_number = '' OR instructions LIKE '%SHOPNEXA never%')`
     ).run();
   }
 
@@ -913,6 +949,18 @@ function seedInitialData(): void {
   const prodCount = (db.prepare(`SELECT COUNT(*) AS cnt FROM products`).get() as { cnt: number }).cnt;
   if (prodCount === 0) {
     seedCatalogProducts();
+  } else {
+    db.prepare(
+      `UPDATE products
+       SET brand = REPLACE(brand, 'SHOPNEXA ', 'SHOPNEXA ROBI HUB '),
+           manufacturer = REPLACE(manufacturer, 'SHOPNEXA ', 'SHOPNEXA ROBI HUB '),
+           shipping_info = REPLACE(shipping_info, 'SHOPNEXA Vault', 'SHOPNEXA ROBI HUB Vault'),
+           specs_json = REPLACE(specs_json, 'SHOPNEXA Atelier', 'SHOPNEXA ROBI HUB Atelier')
+       WHERE (brand LIKE 'SHOPNEXA %' AND brand NOT LIKE 'SHOPNEXA ROBI HUB %')
+          OR (manufacturer LIKE 'SHOPNEXA %' AND manufacturer NOT LIKE 'SHOPNEXA ROBI HUB %')
+          OR shipping_info LIKE '%from SHOPNEXA Vault%'
+          OR specs_json LIKE '%"SHOPNEXA Atelier"%'`
+    ).run();
   }
 }
 
@@ -927,8 +975,8 @@ function seedCatalogProducts(): void {
       product_code: 'SNX-OWN-001',
       sku: 'SNX-WCH-AUR-01',
       name: 'Aurelia Black & Gold Chronograph',
-      brand: 'SHOPNEXA Atelier',
-      manufacturer: 'SHOPNEXA Horology Works',
+      brand: 'SHOPNEXA ROBI HUB Atelier',
+      manufacturer: 'SHOPNEXA ROBI HUB Horology Works',
       product_type: 'own',
       category_id: getCatId('watches'),
       subcategory: 'Mechanical Chronographs',
@@ -970,7 +1018,7 @@ function seedCatalogProducts(): void {
       shipping_weight: '560 g',
       included_accessories: 'Microfiber polishing cloth and warranty booklet',
       specs: {
-        Brand: 'SHOPNEXA Atelier',
+        Brand: 'SHOPNEXA ROBI HUB Atelier',
         Model: 'AUR-CHR-42',
         Movement: 'Automatic Chronograph Calibre',
         CaseMaterial: '316L PVD Stainless Steel',
@@ -981,7 +1029,7 @@ function seedCatalogProducts(): void {
       low_stock_threshold: 4,
       affiliate_url: '',
       estimated_delivery: '1–3 Days (Bangladesh) · 5–8 Days (Global)',
-      shipping_info: 'Insured express courier delivery from SHOPNEXA Vault.',
+      shipping_info: 'Insured express courier delivery from SHOPNEXA ROBI HUB Vault.',
       return_policy: '7-day unused return with intact protective seals.',
       colors: [
         { name: 'Obsidian & Gold', hex_code: '#18181B', stock: 14, sku: 'SNX-WCH-OBG', price_override: 340 },
@@ -1148,8 +1196,8 @@ function seedCatalogProducts(): void {
       product_code: 'SNX-OWN-004',
       sku: 'SNX-MEN-BLZ-04',
       name: 'Noir Tailored Wool Gold-Button Blazer',
-      brand: 'SHOPNEXA Sartorial',
-      manufacturer: 'SHOPNEXA Apparel Studio',
+      brand: 'SHOPNEXA ROBI HUB Sartorial',
+      manufacturer: 'SHOPNEXA ROBI HUB Apparel Studio',
       product_type: 'own',
       category_id: getCatId('mens-fashion'),
       subcategory: 'Tailored Outerwear',

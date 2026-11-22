@@ -254,11 +254,11 @@ export function AdminProductEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="bg-white text-zinc-950 w-full max-w-5xl max-h-[92vh] flex flex-col border border-zinc-300 shadow-2xl">
-        <div className="px-6 py-4 bg-zinc-950 text-white flex items-center justify-between border-b border-[#C9A227]/40">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-zinc-950 text-zinc-100 w-full max-w-5xl max-h-[92vh] flex flex-col border border-[#C9A227]/40 shadow-2xl">
+        <div className="px-6 py-4 bg-black text-white flex items-center justify-between border-b border-[#C9A227]/40">
           <div>
-            <h2 className="font-display text-2xl font-semibold">
+            <h2 className="font-display text-2xl font-semibold text-white">
               {initialProduct ? `Edit Product: ${initialProduct.name}` : 'Create New Product'}
             </h2>
             <p className="text-xs text-[#E4C76B] font-mono tabular-nums mt-0.5">
@@ -270,85 +270,85 @@ export function AdminProductEditor({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 text-xs text-zinc-200">
           {/* Product Type & Basic Information */}
           <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider border-b border-zinc-200 pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B] border-b border-zinc-800 pb-2">
               1. Basic Information
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block font-medium mb-1">Selling System *</label>
+                <label className="block font-medium text-zinc-300 mb-1">Selling System *</label>
                 <select
                   value={productType}
                   onChange={(e) => setProductType(e.target.value as 'own' | 'affiliate')}
-                  className="w-full border border-zinc-300 px-3 py-2 bg-white font-semibold"
+                  className="w-full border border-zinc-700 px-3 py-2 bg-zinc-900 text-white font-semibold focus:border-[#C9A227] focus:outline-none"
                 >
-                  <option value="own">Own Product (Direct SHOPNEXA Checkout)</option>
-                  <option value="affiliate">Affiliate Product (AliExpress Redirect)</option>
+                  <option value="own" className="bg-zinc-950 text-white">Own Product (Direct SHOPNEXA ROBI HUB Checkout)</option>
+                  <option value="affiliate" className="bg-zinc-950 text-white">Affiliate Product (AliExpress Redirect)</option>
                 </select>
               </div>
               <div>
-                <label className="block font-medium mb-1">Product Name *</label>
+                <label className="block font-medium text-zinc-300 mb-1">Product Name *</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-zinc-300 px-3 py-2"
+                  className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block font-medium mb-1">Category *</label>
+                <label className="block font-medium text-zinc-300 mb-1">Category *</label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(Number(e.target.value))}
-                  className="w-full border border-zinc-300 px-3 py-2 bg-white"
+                  className="w-full border border-zinc-700 px-3 py-2 bg-zinc-900 text-white focus:border-[#C9A227] focus:outline-none"
                 >
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id} className="bg-zinc-950 text-white">{c.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block font-medium mb-1">Brand</label>
-                <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Brand</label>
+                <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Manufacturer</label>
-                <input type="text" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Manufacturer</label>
+                <input type="text" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Subcategory</label>
-                <input type="text" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Subcategory</label>
+                <input type="text" value={subcategory} onChange={(e) => setSubcategory(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Product ID / Code</label>
-                <input type="text" value={productCode} onChange={(e) => setProductCode(e.target.value)} placeholder="Auto if blank" className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Product ID / Code</label>
+                <input type="text" value={productCode} onChange={(e) => setProductCode(e.target.value)} placeholder="Auto if blank" className="w-full border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">SKU</label>
-                <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Auto if blank" className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">SKU</label>
+                <input type="text" value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Auto if blank" className="w-full border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Country of Origin</label>
-                <input type="text" value={countryOfOrigin} onChange={(e) => setCountryOfOrigin(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Country of Origin</label>
+                <input type="text" value={countryOfOrigin} onChange={(e) => setCountryOfOrigin(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="w-full border border-zinc-300 px-3 py-2 bg-white">
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                  <option value="out_of_stock">Out of Stock</option>
+                <label className="block font-medium text-zinc-300 mb-1">Status</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="w-full border border-zinc-700 px-3 py-2 bg-zinc-900 text-white focus:border-[#C9A227] focus:outline-none">
+                  <option value="active" className="bg-zinc-950 text-white">Active</option>
+                  <option value="draft" className="bg-zinc-950 text-white">Draft</option>
+                  <option value="out_of_stock" className="bg-zinc-950 text-white">Out of Stock</option>
                 </select>
               </div>
               <div>
-                <label className="block font-medium mb-1">Collection Tag</label>
-                <input type="text" value={collectionTag} onChange={(e) => setCollectionTag(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Collection Tag</label>
+                <input type="text" value={collectionTag} onChange={(e) => setCollectionTag(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 pt-1">
+            <div className="flex flex-wrap gap-4 pt-1 text-zinc-200">
               {[
                 { label: 'Featured', val: isFeatured, set: setIsFeatured },
                 { label: 'New Arrival', val: isNewArrival, set: setIsNewArrival },
@@ -358,7 +358,7 @@ export function AdminProductEditor({
                 { label: 'Recommended', val: isRecommended, set: setIsRecommended },
               ].map((flag) => (
                 <label key={flag.label} className="flex items-center gap-1.5 cursor-pointer">
-                  <input type="checkbox" checked={flag.val} onChange={(e) => flag.set(e.target.checked)} />
+                  <input type="checkbox" checked={flag.val} onChange={(e) => flag.set(e.target.checked)} className="accent-[#C9A227]" />
                   <span>{flag.label}</span>
                 </label>
               ))}
@@ -366,33 +366,33 @@ export function AdminProductEditor({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-medium mb-1">Short Description</label>
-                <textarea rows={2} value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Short Description</label>
+                <textarea rows={2} value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Product Highlights (one per line)</label>
-                <textarea rows={2} value={highlightsText} onChange={(e) => setHighlightsText(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Product Highlights (one per line)</label>
+                <textarea rows={2} value={highlightsText} onChange={(e) => setHighlightsText(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div className="sm:col-span-2">
-                <label className="block font-medium mb-1">Full Description</label>
-                <textarea rows={3} value={fullDescription} onChange={(e) => setFullDescription(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Full Description</label>
+                <textarea rows={3} value={fullDescription} onChange={(e) => setFullDescription(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
             </div>
           </section>
 
           {/* Affiliate Specific */}
           {productType === 'affiliate' && (
-            <section className="bg-zinc-50 border border-[#C9A227]/50 p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-zinc-950">AliExpress Affiliate Configuration</h3>
+            <section className="bg-zinc-900 border border-[#C9A227]/50 p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-white">AliExpress Affiliate Configuration</h3>
               <div>
-                <label className="block font-medium mb-1">Official AliExpress Affiliate Tracking URL *</label>
+                <label className="block font-medium text-zinc-300 mb-1">Official AliExpress Affiliate Tracking URL *</label>
                 <input
                   type="url"
                   required
                   value={affiliateUrl}
                   onChange={(e) => setAffiliateUrl(e.target.value)}
                   placeholder="https://s.click.aliexpress.com/e/..."
-                  className="w-full border border-zinc-300 bg-white px-3 py-2 font-mono"
+                  className="w-full border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
               </div>
             </section>
@@ -400,7 +400,7 @@ export function AdminProductEditor({
 
           {/* Media Gallery & Video */}
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider border-b border-zinc-200 pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B] border-b border-zinc-800 pb-2">
               2. Product Images & Video
             </h3>
             <div className="flex flex-wrap gap-2 items-center">
@@ -409,7 +409,7 @@ export function AdminProductEditor({
                 value={newImageUrl}
                 onChange={(e) => setNewImageUrl(e.target.value)}
                 placeholder="Paste image URL"
-                className="flex-1 min-w-[200px] border border-zinc-300 px-3 py-2"
+                className="flex-1 min-w-[200px] border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
               />
               <button
                 type="button"
@@ -419,11 +419,11 @@ export function AdminProductEditor({
                     setNewImageUrl('');
                   }
                 }}
-                className="px-3 py-2 bg-zinc-900 text-white font-semibold"
+                className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-semibold transition-colors"
               >
                 Add Image URL
               </button>
-              <label className="px-3 py-2 bg-[#C9A227] text-black font-semibold cursor-pointer flex items-center gap-1.5">
+              <label className="px-3 py-2 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold cursor-pointer flex items-center gap-1.5 transition-colors">
                 <Upload className="w-3.5 h-3.5" />
                 <span>Upload Image</span>
                 <input type="file" accept="image/*" onChange={(e) => void handleUploadMedia(e, 'image')} className="hidden" />
@@ -431,7 +431,7 @@ export function AdminProductEditor({
             </div>
             <div className="flex flex-wrap gap-3">
               {images.map((img, i) => (
-                <div key={i} className="relative w-24 h-20 border border-zinc-300 bg-zinc-100">
+                <div key={i} className="relative w-24 h-20 border border-zinc-700 bg-white">
                   <img src={img} alt="" className="w-full h-full object-cover" />
                   <button
                     type="button"
@@ -449,9 +449,9 @@ export function AdminProductEditor({
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="Product Video URL (MP4 / WebM)"
-                className="flex-1 border border-zinc-300 px-3 py-2"
+                className="flex-1 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none"
               />
-              <label className="px-3 py-2 border border-zinc-300 cursor-pointer flex items-center gap-1">
+              <label className="px-3 py-2 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] cursor-pointer flex items-center gap-1">
                 <Upload className="w-3.5 h-3.5" />
                 <span>Upload Video</span>
                 <input type="file" accept="video/mp4,video/webm" onChange={(e) => void handleUploadMedia(e, 'video')} className="hidden" />
@@ -461,49 +461,49 @@ export function AdminProductEditor({
 
           {/* Pricing & Inventory */}
           <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider border-b border-zinc-200 pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B] border-b border-zinc-800 pb-2">
               3. Pricing & Inventory (USD Base)
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <label className="block font-medium mb-1">Original Price</label>
-                <input type="number" step="0.01" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Original Price</label>
+                <input type="number" step="0.01" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Selling Price *</label>
-                <input type="number" step="0.01" required value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Selling Price *</label>
+                <input type="number" step="0.01" required value={sellingPrice} onChange={(e) => setSellingPrice(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Sale Price</label>
-                <input type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Sale Price</label>
+                <input type="number" step="0.01" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Wholesale Price</label>
-                <input type="number" step="0.01" value={wholesalePrice} onChange={(e) => setWholesalePrice(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Wholesale Price</label>
+                <input type="number" step="0.01" value={wholesalePrice} onChange={(e) => setWholesalePrice(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Base Total Stock</label>
-                <input type="number" value={totalStock} onChange={(e) => setTotalStock(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Base Total Stock</label>
+                <input type="number" value={totalStock} onChange={(e) => setTotalStock(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Low Stock Alert At</label>
-                <input type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Low Stock Alert At</label>
+                <input type="number" value={lowStockThreshold} onChange={(e) => setLowStockThreshold(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Shipping Cost</label>
-                <input type="number" step="0.01" value={shippingCost} onChange={(e) => setShippingCost(e.target.value)} className="w-full border border-zinc-300 px-3 py-2 font-mono" />
+                <label className="block font-medium text-zinc-300 mb-1">Shipping Cost</label>
+                <input type="number" step="0.01" value={shippingCost} onChange={(e) => setShippingCost(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 font-mono focus:border-[#C9A227] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium mb-1">Tax Information</label>
-                <input type="text" value={taxInfo} onChange={(e) => setTaxInfo(e.target.value)} className="w-full border border-zinc-300 px-3 py-2" />
+                <label className="block font-medium text-zinc-300 mb-1">Tax Information</label>
+                <input type="text" value={taxInfo} onChange={(e) => setTaxInfo(e.target.value)} className="w-full border border-zinc-700 bg-zinc-900 text-white px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
               </div>
             </div>
           </section>
 
           {/* Colors Management */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wider">4. Colors ({colors.length})</h3>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B]">4. Colors ({colors.length})</h3>
               <button
                 type="button"
                 onClick={() =>
@@ -512,33 +512,33 @@ export function AdminProductEditor({
                     { name: 'Obsidian Black', hex_code: '#09090B', images: [], is_available: true, stock: 10, sku: '', price_override: null },
                   ])
                 }
-                className="px-3 py-1.5 bg-zinc-950 text-white font-semibold flex items-center gap-1"
+                className="px-3 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold flex items-center gap-1 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Color</span>
               </button>
             </div>
             {colors.map((c, idx) => (
-              <div key={idx} className="border border-zinc-200 p-3 grid grid-cols-2 sm:grid-cols-6 gap-2 items-center">
+              <div key={idx} className="border border-zinc-800 bg-zinc-900 p-3 grid grid-cols-2 sm:grid-cols-6 gap-2 items-center">
                 <input
                   type="text"
                   placeholder="Color Name"
                   value={c.name}
                   onChange={(e) => setColors((p) => p.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <div className="flex items-center gap-1">
                   <input
                     type="color"
                     value={c.hex_code}
                     onChange={(e) => setColors((p) => p.map((x, i) => (i === idx ? { ...x, hex_code: e.target.value } : x)))}
-                    className="w-8 h-8 border"
+                    className="w-8 h-8 border border-zinc-700 bg-zinc-950"
                   />
                   <input
                     type="text"
                     value={c.hex_code}
                     onChange={(e) => setColors((p) => p.map((x, i) => (i === idx ? { ...x, hex_code: e.target.value } : x)))}
-                    className="w-20 border border-zinc-300 px-2 py-1.5 font-mono"
+                    className="w-20 border border-zinc-700 bg-zinc-950 text-white px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                   />
                 </div>
                 <input
@@ -546,14 +546,14 @@ export function AdminProductEditor({
                   placeholder="Stock"
                   value={c.stock}
                   onChange={(e) => setColors((p) => p.map((x, i) => (i === idx ? { ...x, stock: Number(e.target.value) } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Color SKU"
                   value={c.sku}
                   onChange={(e) => setColors((p) => p.map((x, i) => (i === idx ? { ...x, sku: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="number"
@@ -567,14 +567,14 @@ export function AdminProductEditor({
                       )
                     )
                   }
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <label className="px-2 py-1 bg-zinc-100 border cursor-pointer">
+                  <label className="px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-200 hover:border-[#C9A227] cursor-pointer">
                     Img ({c.images.length})
                     <input type="file" accept="image/*" onChange={(e) => void handleUploadMedia(e, { colorIdx: idx })} className="hidden" />
                   </label>
-                  <button type="button" onClick={() => setColors((p) => p.filter((_, i) => i !== idx))} className="text-red-600">
+                  <button type="button" onClick={() => setColors((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -584,8 +584,8 @@ export function AdminProductEditor({
 
           {/* Sizes Management */}
           <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wider">5. Sizes & Measurements ({sizes.length})</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B]">5. Sizes & Measurements ({sizes.length})</h3>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -602,7 +602,7 @@ export function AdminProductEditor({
                       }))
                     )
                   }
-                  className="px-2.5 py-1 border border-zinc-300 hover:border-black"
+                  className="px-2.5 py-1 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] hover:text-white"
                 >
                   + Clothing Preset
                 </button>
@@ -621,7 +621,7 @@ export function AdminProductEditor({
                       }))
                     )
                   }
-                  className="px-2.5 py-1 border border-zinc-300 hover:border-black"
+                  className="px-2.5 py-1 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] hover:text-white"
                 >
                   + Shoes Preset
                 </button>
@@ -641,38 +641,38 @@ export function AdminProductEditor({
                       },
                     ])
                   }
-                  className="px-3 py-1 bg-zinc-950 text-white font-semibold"
+                  className="px-3 py-1 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold"
                 >
                   + Add Custom Size
                 </button>
               </div>
             </div>
             {sizes.map((s, idx) => (
-              <div key={idx} className="border border-zinc-200 p-3 grid grid-cols-2 sm:grid-cols-6 gap-2 items-center">
+              <div key={idx} className="border border-zinc-800 bg-zinc-900 p-3 grid grid-cols-2 sm:grid-cols-6 gap-2 items-center">
                 <input
                   type="text"
                   placeholder="Size Label"
                   value={s.label}
                   onChange={(e) => setSizes((p) => p.map((x, i) => (i === idx ? { ...x, label: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <select
                   value={s.size_system}
                   onChange={(e) => setSizes((p) => p.map((x, i) => (i === idx ? { ...x, size_system: e.target.value as any } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5 bg-white"
+                  className="border border-zinc-700 px-2 py-1.5 bg-zinc-950 text-white focus:border-[#C9A227] focus:outline-none"
                 >
-                  <option value="Standard">Standard</option>
-                  <option value="EU">EU</option>
-                  <option value="US">US</option>
-                  <option value="UK">UK</option>
-                  <option value="Custom">Custom</option>
+                  <option value="Standard" className="bg-zinc-950 text-white">Standard</option>
+                  <option value="EU" className="bg-zinc-950 text-white">EU</option>
+                  <option value="US" className="bg-zinc-950 text-white">US</option>
+                  <option value="UK" className="bg-zinc-950 text-white">UK</option>
+                  <option value="Custom" className="bg-zinc-950 text-white">Custom</option>
                 </select>
                 <input
                   type="number"
                   placeholder="Stock"
                   value={s.stock}
                   onChange={(e) => setSizes((p) => p.map((x, i) => (i === idx ? { ...x, stock: Number(e.target.value) } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="text"
@@ -685,7 +685,7 @@ export function AdminProductEditor({
                       )
                     )
                   }
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="number"
@@ -699,9 +699,9 @@ export function AdminProductEditor({
                       )
                     )
                   }
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
-                <button type="button" onClick={() => setSizes((p) => p.filter((_, i) => i !== idx))} className="text-red-600 justify-self-end">
+                <button type="button" onClick={() => setSizes((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300 justify-self-end">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -710,8 +710,8 @@ export function AdminProductEditor({
 
           {/* Models & Variations */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wider">6. Models & Variations ({variations.length})</h3>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B]">6. Models & Variations ({variations.length})</h3>
               <button
                 type="button"
                 onClick={() =>
@@ -736,34 +736,34 @@ export function AdminProductEditor({
                     },
                   ])
                 }
-                className="px-3 py-1.5 bg-zinc-950 text-white font-semibold flex items-center gap-1"
+                className="px-3 py-1.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Variation</span>
               </button>
             </div>
             {variations.map((v, idx) => (
-              <div key={idx} className="border border-zinc-200 p-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div key={idx} className="border border-zinc-800 bg-zinc-900 p-3 grid grid-cols-2 sm:grid-cols-5 gap-2">
                 <input
                   type="text"
                   placeholder="Variant Name"
                   value={v.variant_name}
                   onChange={(e) => setVariations((p) => p.map((x, i) => (i === idx ? { ...x, variant_name: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Model Number / Name"
                   value={v.model_name}
                   onChange={(e) => setVariations((p) => p.map((x, i) => (i === idx ? { ...x, model_name: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="text"
                   placeholder="Style / Material"
                   value={v.material}
                   onChange={(e) => setVariations((p) => p.map((x, i) => (i === idx ? { ...x, material: e.target.value } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                 />
                 <input
                   type="number"
@@ -771,7 +771,7 @@ export function AdminProductEditor({
                   placeholder="Price"
                   value={v.price}
                   onChange={(e) => setVariations((p) => p.map((x, i) => (i === idx ? { ...x, price: Number(e.target.value) } : x)))}
-                  className="border border-zinc-300 px-2 py-1.5 font-mono"
+                  className="border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                 />
                 <div className="flex gap-2 items-center">
                   <input
@@ -779,9 +779,9 @@ export function AdminProductEditor({
                     placeholder="Stock"
                     value={v.stock}
                     onChange={(e) => setVariations((p) => p.map((x, i) => (i === idx ? { ...x, stock: Number(e.target.value) } : x)))}
-                    className="w-20 border border-zinc-300 px-2 py-1.5 font-mono"
+                    className="w-20 border border-zinc-700 bg-zinc-950 text-white placeholder:text-zinc-500 px-2 py-1.5 font-mono focus:border-[#C9A227] focus:outline-none"
                   />
-                  <button type="button" onClick={() => setVariations((p) => p.filter((_, i) => i !== idx))} className="text-red-600">
+                  <button type="button" onClick={() => setVariations((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -791,16 +791,16 @@ export function AdminProductEditor({
 
           {/* Specifications */}
           <section className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-2">
-              <h3 className="text-sm font-semibold uppercase tracking-wider">7. Product Specifications</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B]">7. Product Specifications</h3>
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => applySpecTemplate('clothing')} className="px-2.5 py-1 border border-zinc-300">+ Clothing Specs</button>
-                <button type="button" onClick={() => applySpecTemplate('electronics')} className="px-2.5 py-1 border border-zinc-300">+ Electronics Specs</button>
-                <button type="button" onClick={() => applySpecTemplate('shoes')} className="px-2.5 py-1 border border-zinc-300">+ Shoe Specs</button>
+                <button type="button" onClick={() => applySpecTemplate('clothing')} className="px-2.5 py-1 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] hover:text-white">+ Clothing Specs</button>
+                <button type="button" onClick={() => applySpecTemplate('electronics')} className="px-2.5 py-1 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] hover:text-white">+ Electronics Specs</button>
+                <button type="button" onClick={() => applySpecTemplate('shoes')} className="px-2.5 py-1 border border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-[#C9A227] hover:text-white">+ Shoe Specs</button>
                 <button
                   type="button"
                   onClick={() => setSpecsList((p) => [...p, { key: '', value: '' }])}
-                  className="px-3 py-1 bg-zinc-950 text-white font-semibold"
+                  className="px-3 py-1 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold"
                 >
                   + Custom Spec
                 </button>
@@ -814,16 +814,16 @@ export function AdminProductEditor({
                     placeholder="Attribute"
                     value={sp.key}
                     onChange={(e) => setSpecsList((p) => p.map((x, i) => (i === idx ? { ...x, key: e.target.value } : x)))}
-                    className="w-1/2 border border-zinc-300 px-2 py-1.5 font-medium"
+                    className="w-1/2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-2 py-1.5 font-medium focus:border-[#C9A227] focus:outline-none"
                   />
                   <input
                     type="text"
                     placeholder="Value"
                     value={sp.value}
                     onChange={(e) => setSpecsList((p) => p.map((x, i) => (i === idx ? { ...x, value: e.target.value } : x)))}
-                    className="w-1/2 border border-zinc-300 px-2 py-1.5"
+                    className="w-1/2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-2 py-1.5 focus:border-[#C9A227] focus:outline-none"
                   />
-                  <button type="button" onClick={() => setSpecsList((p) => p.filter((_, i) => i !== idx))} className="text-red-600">
+                  <button type="button" onClick={() => setSpecsList((p) => p.filter((_, i) => i !== idx))} className="text-red-400 hover:text-red-300">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -833,32 +833,32 @@ export function AdminProductEditor({
 
           {/* Packaging & Delivery */}
           <section className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider border-b border-zinc-200 pb-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-[#E4C76B] border-b border-zinc-800 pb-2">
               8. Packaging, Dimensions & Shipping Info
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <input type="text" placeholder="Package Contents" value={packageContents} onChange={(e) => setPackageContents(e.target.value)} className="col-span-2 border border-zinc-300 px-3 py-2" />
-              <input type="number" placeholder="Pieces" value={numberOfPieces} onChange={(e) => setNumberOfPieces(e.target.value)} className="border border-zinc-300 px-3 py-2" />
-              <input type="number" placeholder="Pkg Qty" value={packageQuantity} onChange={(e) => setPackageQuantity(e.target.value)} className="border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Length (e.g. 20cm)" value={packageLength} onChange={(e) => setPackageLength(e.target.value)} className="border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Width" value={packageWidth} onChange={(e) => setPackageWidth(e.target.value)} className="border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Height" value={packageHeight} onChange={(e) => setPackageHeight(e.target.value)} className="border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Weight / Shipping Wt" value={packageWeight} onChange={(e) => { setPackageWeight(e.target.value); setShippingWeight(e.target.value); }} className="border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Included Accessories" value={includedAccessories} onChange={(e) => setIncludedAccessories(e.target.value)} className="col-span-2 border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Estimated Delivery" value={estimatedDelivery} onChange={(e) => setEstimatedDelivery(e.target.value)} className="col-span-2 border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Shipping Info" value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} className="col-span-2 border border-zinc-300 px-3 py-2" />
-              <input type="text" placeholder="Return Policy" value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} className="col-span-2 border border-zinc-300 px-3 py-2" />
+              <input type="text" placeholder="Package Contents" value={packageContents} onChange={(e) => setPackageContents(e.target.value)} className="col-span-2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="number" placeholder="Pieces" value={numberOfPieces} onChange={(e) => setNumberOfPieces(e.target.value)} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="number" placeholder="Pkg Qty" value={packageQuantity} onChange={(e) => setPackageQuantity(e.target.value)} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Length (e.g. 20cm)" value={packageLength} onChange={(e) => setPackageLength(e.target.value)} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Width" value={packageWidth} onChange={(e) => setPackageWidth(e.target.value)} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Height" value={packageHeight} onChange={(e) => setPackageHeight(e.target.value)} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Weight / Shipping Wt" value={packageWeight} onChange={(e) => { setPackageWeight(e.target.value); setShippingWeight(e.target.value); }} className="border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Included Accessories" value={includedAccessories} onChange={(e) => setIncludedAccessories(e.target.value)} className="col-span-2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Estimated Delivery" value={estimatedDelivery} onChange={(e) => setEstimatedDelivery(e.target.value)} className="col-span-2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Shipping Info" value={shippingInfo} onChange={(e) => setShippingInfo(e.target.value)} className="col-span-2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
+              <input type="text" placeholder="Return Policy" value={returnPolicy} onChange={(e) => setReturnPolicy(e.target.value)} className="col-span-2 border border-zinc-700 bg-zinc-900 text-white placeholder:text-zinc-500 px-3 py-2 focus:border-[#C9A227] focus:outline-none" />
             </div>
           </section>
 
-          <div className="sticky bottom-0 bg-white border-t border-zinc-200 pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 border border-zinc-300 font-semibold">
+          <div className="sticky bottom-0 bg-zinc-950 border-t border-zinc-800 pt-4 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 border border-zinc-700 text-zinc-200 hover:border-zinc-500 hover:text-white font-semibold transition-colors">
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-zinc-950 hover:bg-[#C9A227] text-white hover:text-black font-semibold transition-colors"
+              className="px-6 py-2.5 bg-[#C9A227] hover:bg-[#E4C76B] text-black font-semibold transition-colors"
             >
               {saving ? 'Saving...' : initialProduct ? 'Save Changes' : 'Publish Product'}
             </button>

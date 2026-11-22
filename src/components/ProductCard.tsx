@@ -16,9 +16,9 @@ export function ProductCard({ product }: ProductCardProps) {
   const hasDiscount = product.original_price > currentPrice && product.discount_percentage > 0;
 
   return (
-    <article className="group bg-white border border-zinc-200 hover:border-zinc-900 transition-all duration-200 flex flex-col">
+    <article className="group bg-white text-zinc-950 border border-zinc-200 hover:border-[#C9A227] shadow-lg shadow-black/40 transition-all duration-200 flex flex-col">
       {/* Image Block (68% visual emphasis) */}
-      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-white border-b border-zinc-100 overflow-hidden">
         <button
           type="button"
           onClick={() => navigate({ page: 'product', productId: product.id })}
@@ -55,7 +55,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Clean unboxed metadata with typographic separators */}
           <div className="flex items-center justify-between gap-2 text-xs text-zinc-500">
             <span className="truncate font-medium uppercase tracking-wider text-zinc-600">
-              {product.brand || 'SHOPNEXA'}
+              {product.brand || 'SHOPNEXA ROBI HUB'}
             </span>
             <span
               className={`shrink-0 font-medium flex items-center gap-1 ${

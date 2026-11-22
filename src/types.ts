@@ -359,6 +359,7 @@ export interface SiteSettings {
   affiliate_disclosure: string;
   email_notifications_enabled: boolean;
   customer_download_buyers_only?: boolean;
+  android_apk_url?: string;
   telegram_configured?: boolean;
 }
 

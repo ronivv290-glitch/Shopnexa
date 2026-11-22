@@ -254,7 +254,7 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   createNotification(
     userId,
     'registration',
-    'Welcome to SHOPNEXA',
+    'Welcome to SHOPNEXA ROBI HUB',
     `Your customer account (${email}) is active. Enjoy direct checkout and order tracking.`
   );
   void sendTelegramAlert('new_customer', `New Customer Registered: ${name} (${email})`);
@@ -277,7 +277,7 @@ app.post('/api/auth/login', authLimiter, (req, res) => {
     return;
   }
   if (user.status === 'suspended') {
-    res.status(403).json({ error: 'This account is currently suspended. Contact SHOPNEXA Support.' });
+    res.status(403).json({ error: 'This account is currently suspended. Contact SHOPNEXA ROBI HUB Support.' });
     return;
   }
 
@@ -339,7 +339,7 @@ app.get('/api/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
     res.json({
       user: {
         id: 0,
-        name: 'SHOPNEXA Administrator',
+        name: 'SHOPNEXA ROBI HUB Administrator',
         email: req.auth!.email,
         phone: '',
         role: 'admin',
@@ -883,7 +883,7 @@ app.post('/api/orders', async (req: AuthenticatedRequest, res) => {
           throw new Error(`Product #${reqItem.product_id} does not exist.`);
         }
         if (prod.product_type !== 'own') {
-          throw new Error(`${prod.name} is an affiliate partner product and cannot be ordered via SHOPNEXA checkout.`);
+          throw new Error(`${prod.name} is an affiliate partner product and cannot be ordered via SHOPNEXA ROBI HUB checkout.`);
         }
         const qty = Math.max(1, Number(reqItem.quantity || 1));
 
@@ -1062,7 +1062,7 @@ app.post('/api/orders', async (req: AuthenticatedRequest, res) => {
       db.prepare(
         `INSERT INTO payment_records (order_id, gateway, transaction_id, amount, currency, status, notes)
          VALUES (?, ?, ?, ?, 'USD', 'pending', ?)`
-      ).run(orderId, paymentMethod, transactionId, finalTotal, 'Order placed via SHOPNEXA checkout');
+      ).run(orderId, paymentMethod, transactionId, finalTotal, 'Order placed via SHOPNEXA ROBI HUB checkout');
 
       if (req.auth?.userId) {
         db.prepare(`DELETE FROM cart_items WHERE user_id = ?`).run(req.auth.userId);
@@ -1228,7 +1228,7 @@ app.post('/api/newsletter', (req, res) => {
     return;
   }
   db.prepare(`INSERT OR IGNORE INTO newsletter_subscribers (email, language) VALUES (?, ?)`).run(email, language);
-  res.json({ message: 'Subscribed to SHOPNEXA releases and private offers.' });
+  res.json({ message: 'Subscribed to SHOPNEXA ROBI HUB releases and private offers.' });
 });
 
 // ============================================================================
@@ -1895,7 +1895,16 @@ app.put('/api/admin/payments/:gateway', requireAdmin, (req, res) => {
 // Admin Website Settings & Backup
 app.put('/api/admin/settings', requireAdmin, (req, res) => {
   const b = req.body || {};
-  const urlFields = ['facebook_url', 'youtube_url', 'telegram_channel_url', 'instagram_url', 'telegram_support_url', 'hero_image', 'logo_url'];
+  const urlFields = [
+    'facebook_url',
+    'youtube_url',
+    'telegram_channel_url',
+    'instagram_url',
+    'telegram_support_url',
+    'hero_image',
+    'logo_url',
+    'android_apk_url',
+  ];
   for (const f of urlFields) {
     if (b[f] && !isValidSafeUrl(b[f])) {
       res.status(400).json({ error: `Invalid URL provided for ${f}` });
@@ -1911,7 +1920,7 @@ app.post('/api/admin/telegram/test', requireAdmin, async (_req, res) => {
     res.status(400).json({ error: 'TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set in server environment Secrets.' });
     return;
   }
-  const sent = await sendTelegramAlert('support', 'Test notification from SHOPNEXA Admin Dashboard.');
+  const sent = await sendTelegramAlert('support', 'Test notification from SHOPNEXA ROBI HUB Admin Dashboard.');
   res.json({ sent });
 });
 
@@ -2016,6 +2025,33 @@ app.get('/api/admin/error-logs', requireAdmin, (_req, res) => {
   res.json(db.prepare(`SELECT * FROM error_logs ORDER BY id DESC LIMIT 100`).all());
 });
 
+app.get('/robots.txt', (req, res) => {
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+  const host = req.get('host') || 'shopnexa-2.onrender.com';
+  const baseUrl = `${proto}://${host}`;
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`);
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+  const host = req.get('host') || 'shopnexa-2.onrender.com';
+  const baseUrl = `${proto}://${host}`;
+  const today = new Date().toISOString().slice(0, 10);
+  res
+    .type('application/xml')
+    .send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        `  <url>\n` +
+        `    <loc>${baseUrl}/</loc>\n` +
+        `    <lastmod>${today}</lastmod>\n` +
+        `    <changefreq>daily</changefreq>\n` +
+        `    <priority>1.0</priority>\n` +
+        `  </url>\n` +
+        `</urlset>\n`
+    );
+});
+
 // ---------- SERVER STARTUP (Vite dev middleware or static dist) ----------
 async function startServer(): Promise<void> {
   if (process.env.NODE_ENV !== 'production') {
@@ -2033,7 +2069,7 @@ async function startServer(): Promise<void> {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`SHOPNEXA server listening on port ${PORT}`);
+    console.log(`SHOPNEXA ROBI HUB server listening on port ${PORT}`);
   });
 }
 

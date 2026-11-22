@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+export type InstallPlatform = 'android' | 'ios' | 'desktop';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
@@ -9,6 +11,8 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
+  const [platform, setPlatform] = useState<InstallPlatform>('desktop');
 
   useEffect(() => {
     const isStandalone =
@@ -17,7 +21,11 @@ export function usePWAInstall() {
     setIsInstalled(isStandalone);
 
     const userAgent = window.navigator.userAgent.toLowerCase();
-    setIsIOS(/iphone|ipad|ipod/.test(userAgent));
+    const iosDetected = /iphone|ipad|ipod/.test(userAgent);
+    const androidDetected = /android/.test(userAgent);
+    setIsIOS(iosDetected);
+    setIsAndroid(androidDetected);
+    setPlatform(androidDetected ? 'android' : iosDetected ? 'ios' : 'desktop');
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -54,6 +62,9 @@ export function usePWAInstall() {
     isInstallable: Boolean(deferredPrompt),
     isInstalled,
     isIOS,
+    isAndroid,
+    isMobile: isIOS || isAndroid,
+    platform,
     install,
   };
 }

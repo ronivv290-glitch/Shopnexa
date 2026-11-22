@@ -1,14 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#09090B" />
-  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#C9A227" stroke-width="10" />
-  <rect x="44" y="44" width="424" height="424" fill="none" stroke="#C9A227" stroke-opacity="0.35" stroke-width="2" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="obsidianBg" cx="50%" cy="38%" r="72%">
+      <stop offset="0%" stop-color="#1C1C22" />
+      <stop offset="55%" stop-color="#0D0D11" />
+      <stop offset="100%" stop-color="#060608" />
+    </radialGradient>
+    <linearGradient id="goldMain" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF0BA" />
+      <stop offset="32%" stop-color="#E4C76B" />
+      <stop offset="68%" stop-color="#C9A227" />
+      <stop offset="100%" stop-color="#8A6712" />
+    </linearGradient>
+    <linearGradient id="goldBright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5CC" />
+      <stop offset="50%" stop-color="#E4C76B" />
+      <stop offset="100%" stop-color="#B08819" />
+    </linearGradient>
+    <linearGradient id="goldLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C9A227" stop-opacity="0" />
+      <stop offset="50%" stop-color="#E4C76B" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#C9A227" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Full Obsidian Base -->
+  <rect width="512" height="512" rx="96" fill="url(#obsidianBg)" />
+
+  <!-- Outer & Inner Architectural Gold Frames -->
+  <rect x="24" y="24" width="464" height="464" rx="76" fill="none" stroke="url(#goldMain)" stroke-width="5" />
+  <rect x="38" y="38" width="436" height="436" rx="64" fill="none" stroke="#C9A227" stroke-opacity="0.35" stroke-width="1.5" />
+
+  <!-- Top Minimal Crown / Diamond Crest -->
+  <polygon points="256,64 268,80 256,96 244,80" fill="url(#goldBright)" />
+  <polygon points="222,76 232,86 222,94 214,86" fill="#C9A227" opacity="0.85" />
+  <polygon points="290,76 298,86 290,94 280,86" fill="#C9A227" opacity="0.85" />
+
+  <!-- Luxury Octagonal Emblem + Bag Handle -->
+  <path d="M214 148 C214 114, 298 114, 298 148" fill="none" stroke="url(#goldBright)" stroke-width="9" stroke-linecap="round" />
+  <polygon
+    points="182,148 330,148 354,174 354,306 330,332 182,332 158,306 158,174"
+    fill="#09090D"
+    stroke="url(#goldMain)"
+    stroke-width="6"
+  />
+  <polygon
+    points="190,158 322,158 342,180 342,300 322,322 190,322 170,300 170,180"
+    fill="none"
+    stroke="#E4C76B"
+    stroke-opacity="0.35"
+    stroke-width="1.5"
+  />
+
+  <!-- Center Stylized Serif Monogram S -->
   <text
     x="256"
-    y="312"
+    y="286"
     text-anchor="middle"
-    font-family="Georgia, 'Times New Roman', serif"
-    font-size="250"
+    font-family="Liberation Serif, DejaVu Serif, Georgia, serif"
+    font-size="146"
     font-weight="700"
-    fill="#E4C76B"
+    fill="url(#goldBright)"
   >S</text>
+
+  <!-- Brand Wordmark -->
+  <text
+    x="256"
+    y="392"
+    text-anchor="middle"
+    font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif"
+    font-size="40"
+    font-weight="700"
+    letter-spacing="7"
+    fill="url(#goldMain)"
+  >SHOPNEXA</text>
+
+  <!-- Subtle Gold Divider + ROBI HUB Signature -->
+  <rect x="116" y="408" width="280" height="1.5" fill="url(#goldLine)" />
+  <text
+    x="256"
+    y="440"
+    text-anchor="middle"
+    font-family="Liberation Sans, DejaVu Sans, Arial, sans-serif"
+    font-size="22"
+    font-weight="600"
+    letter-spacing="8"
+    fill="#F4F4F5"
+  >ROBI HUB</text>
 </svg>
