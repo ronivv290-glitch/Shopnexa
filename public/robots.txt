@@ -1,0 +1,11 @@
+User-agent: Googlebot
+Allow: /
+
+User-agent: Google-InspectionTool
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://shopnexa-2.onrender.com/sitemap.xml

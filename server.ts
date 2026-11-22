@@ -2033,7 +2033,16 @@ app.get('/robots.txt', (req, res) => {
   const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
   const host = req.get('host') || 'shopnexa-2.onrender.com';
   const baseUrl = `${proto}://${host}`;
-  res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${baseUrl}/sitemap.xml\n`);
+  res
+    .status(200)
+    .set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    .type('text/plain; charset=utf-8')
+    .send(
+      `User-agent: Googlebot\nAllow: /\n\n` +
+        `User-agent: Google-InspectionTool\nAllow: /\n\n` +
+        `User-agent: *\nAllow: /\nDisallow: /api/\n\n` +
+        `Sitemap: ${baseUrl}/sitemap.xml\n`
+    );
 });
 
 app.get('/sitemap.xml', (req, res) => {
@@ -2042,7 +2051,9 @@ app.get('/sitemap.xml', (req, res) => {
   const baseUrl = `${proto}://${host}`;
   const today = new Date().toISOString().slice(0, 10);
   res
-    .type('application/xml')
+    .status(200)
+    .set('Cache-Control', 'no-cache, no-store, must-revalidate')
+    .type('application/xml; charset=utf-8')
     .send(
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
