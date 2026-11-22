@@ -19,6 +19,7 @@
         "multer": "^2.5.0",
         "react": "^19.0.1",
         "react-dom": "^19.0.1",
+        "tsx": "^4.21.0",
         "vite": "^8.3.0",
       },
       "devDependencies": {
@@ -29,11 +30,14 @@
         "autoprefixer": "^10.4.21",
         "esbuild": "^0.25.0",
         "tailwindcss": "^4.3.3",
-        "tsx": "^4.21.0",
         "typescript": "^7.0.2",
       },
     },
   },
+  "trustedDependencies": [
+    "esbuild",
+    "better-sqlite3",
+  ],
   "packages": {
     "@emnapi/core": ["@emnapi/core@2.0.0-beta.2", "", { "dependencies": { "@emnapi/wasi-threads": "2.2.0", "tslib": "^2.4.0" } }, "sha512-MzCVoWtcg4Pm2B3je5mMvYMvj3MmBKw+fU7vbsJc9/iT8ip6/eYIHo/Dsm/mr+wsHB6SEyJDuxB09Yy6r/8+4A=="],
 
